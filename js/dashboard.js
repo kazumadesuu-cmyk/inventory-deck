@@ -8,6 +8,7 @@ let unsubscribeProducts = null;
 let unsubscribeSales = null;
 let unsubscribeActivity = null;
 let currentFocusProduct = null;
+let lowStockHistory = [];
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', () => {
@@ -33,7 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Setup event listeners
     const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) logoutBtn.addEventListener('click', logoutUser);
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await logoutUser();
+            } catch (err) {
+                console.error('Logout error:', err);
+                window.location.href = 'index.html';
+            }
+        });
+    }
     
     // Modal form handler
     const modalForm = document.getElementById('modalForm');
@@ -168,8 +178,26 @@ async function restockOne(productId) {
 
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
+    
+    // Record alerts with timestamp
     if (lowItems.length > 0) {
+        lowItems.forEach(item => {
+            const existing = lowStockHistory.find(h => h.id === item.id);
+            if (!existing) {
+                lowStockHistory.unshift({
+                    id: item.id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    alert_limit: item.alert_limit,
+                    timestamp: new Date().toLocaleString()
+                });
+            } else {
+                existing.quantity = item.quantity;
+                existing.timestamp = new Date().toLocaleString();
+            }
+        });
         renderFloatingAlert(lowItems);
+        updateAlertsPanel();
         if (Notification.permission === 'granted') {
             new Notification('Stock Alert', {
                 body: `${lowItems.length} items are low on stock`
@@ -177,6 +205,7 @@ function checkLowStock(productList) {
         }
     } else {
         removeFloatingAlert();
+        updateAlertsPanel();
     }
 }
 
@@ -248,6 +277,37 @@ function updateActivityPopup(logs) {
             <td>Qty: ${log.quantity}</td>
         </tr>
     `}).join('');
+}
+
+// ==================== ALERTS PANEL ====================
+window.openAlertsPanel = function() {
+    const panel = document.getElementById('alertsPanel');
+    if (panel) panel.classList.add('alerts-panel-open');
+};
+
+window.closeAlertsPanel = function() {
+    const panel = document.getElementById('alertsPanel');
+    if (panel) panel.classList.remove('alerts-panel-open');
+};
+
+function updateAlertsPanel() {
+    const content = document.getElementById('alertsPanelContent');
+    if (!content) return;
+    
+    if (lowStockHistory.length === 0) {
+        content.innerHTML = '<div class="alerts-empty">No low stock alerts</div>';
+        return;
+    }
+    
+    content.innerHTML = lowStockHistory.map(alert => `
+        <div class="alert-history-item">
+            <div class="alert-history-name">${escapeHtml(alert.name)}</div>
+            <div class="alert-history-details">
+                <span class="alert-history-qty">${alert.quantity} left</span>
+                <span class="alert-history-time">${alert.timestamp}</span>
+            </div>
+        </div>
+    `).join('');
 }
 
 // ==================== MODAL FUNCTIONS ====================

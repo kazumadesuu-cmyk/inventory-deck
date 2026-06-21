@@ -14,7 +14,7 @@
     <nav class="sidebar-menu-list">
         <a href="#dashboard" class="sidebar-menu-item main-node">Dashboard</a>
         <a href="#summary" class="sidebar-menu-item sub-node" onclick="openPopupModal('productsPopup')">Inventory summary</a>
-        <a href="#alerts" class="sidebar-menu-item sub-node" onclick="executeImmediateStockScan(false)">Low-stock alerts</a>
+        <a href="#alerts" class="sidebar-menu-item sub-node" onclick="openAlertsPanel()">Low-stock alerts</a>
         <a href="#activity" class="sidebar-menu-item sub-node" onclick="openPopupModal('recentActivityLogBookPopup')">Recent activity</a>
         <a href="#products" class="sidebar-menu-item main-node">Products / Items</a>
         <a href="#list" class="sidebar-menu-item sub-node" onclick="openPopupModal('productsPopup')">Product list</a>
@@ -48,6 +48,18 @@
         <div class="empty-view">Your inventory deck is empty. Tap add to start!</div>
     </div>
 </div>
+
+<!-- Low Stock Alerts Panel (Sidebar) -->
+<div class="alerts-panel" id="alertsPanel">
+    <div class="alerts-panel-header">
+        <h3>⚠️ Low Stock Alerts</h3>
+        <button class="alerts-panel-close" onclick="closeAlertsPanel()">×</button>
+    </div>
+    <div class="alerts-panel-content" id="alertsPanelContent">
+        <div class="alerts-empty">No low stock alerts</div>
+    </div>
+</div>
+
 <div class="stock-alerts-drawer" id="ignoredAlertsContainer"></div>
 <div class="modal-overlay" id="warningModal">
     <div class="giant-warning-box modal-box">
@@ -142,8 +154,10 @@
         <h3 id="modalTitle">Add Product</h3>
         <form id="modalForm">
             <input type="hidden" id="form_product_id">
-            <input type="text" id="form_name" placeholder="Item Name" required>
-            <input type="text" id="form_category" list="category_suggestions" placeholder="Choose or Type Category" required>
+            <label class="form-label">Item Name</label>
+            <input type="text" id="form_name" placeholder="e.g. Burger" required>
+            <label class="form-label">Category</label>
+            <input type="text" id="form_category" list="category_suggestions" placeholder="e.g. Food" required>
             <datalist id="category_suggestions">
                 <option value="Baked Goods">
                 <option value="Meals / Appetizers">
@@ -151,9 +165,12 @@
                 <option value="Handmade Jewelry">
                 <option value="Custom Prints">
             </datalist>
-            <input type="number" id="form_price" placeholder="Price (₱)" step="0.01" min="0" required>
-            <div id="qty_input_wrapper"><input type="number" id="form_quantity" placeholder="Starting Quantity" min="0" value="0"></div>
-            <input type="number" id="form_alert_limit" placeholder="Alert Limit" min="0" value="5" required>
+            <label class="form-label">Price (₱)</label>
+            <input type="number" id="form_price" placeholder="e.g. 150" step="0.01" min="0" required>
+            <label class="form-label">Initial Quantity</label>
+            <div id="qty_input_wrapper"><input type="number" id="form_quantity" placeholder="How many in stock?" min="0" value="0"></div>
+            <label class="form-label">Stock Alert Limit</label>
+            <input type="number" id="form_alert_limit" placeholder="Alert when stock drops to?" min="0" value="5" required>
             <div style="margin-top:8px;"><input type="file" id="form_image" accept="image/*" style="border:none; background:none;"></div>
             <button type="submit" class="add-product-btn" style="width:100%; margin-top:15px; padding:12px; color:white; border:none; font-weight:bold; cursor:pointer; border-radius:12px;">Save Details</button>
             <button type="button" class="modal-close-btn" onclick="closeModal()">Cancel</button>
