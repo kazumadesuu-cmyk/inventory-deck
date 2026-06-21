@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - Stock Space</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body class="auth-page">
+    <div class="form-container">
+        <h2>Welcome Back</h2>
+        <p class="subtitle">Log in to manage your inventory space</p>
+        <div id="authError" class="error-msg" style="display:none;"></div>
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email" required>
+            <div class="password-wrapper">
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <span class="toggle-password" onclick="togglePassword('loginPassword', this)">Show</span>
+            </div>
+            <button type="submit" class="submit-btn">Log In</button>
+        </form>
+        <div class="hr-container">New to the platform?</div>
+        <a href="register.html" class="reg-btn">Create an Account</a>
+    </div>
+    <script type="module">
+        import { loginUser } from './js/auth.js';
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorDiv = document.getElementById('authError');
+            try {
+                await loginUser(email, password);
+                window.location.href = 'dashboard.html';
+            } catch (err) {
+                errorDiv.textContent = err;
+                errorDiv.style.display = 'block';
+            }
+        });
+        window.togglePassword = function(inputId, element) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") { input.type = "text"; element.textContent = "Hide"; }
+            else { input.type = "password"; element.textContent = "Show"; }
+        };
+    </script>
+</body>
+</html>

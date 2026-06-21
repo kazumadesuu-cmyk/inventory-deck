@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Us! - Stock Space</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body class="auth-page">
+    <div class="form-container">
+        <h2>Create Account</h2>
+        <p class="subtitle">Set up your private inventory space</p>
+        <div id="authError" class="error-msg" style="display:none;"></div>
+        <form id="registerForm">
+            <input type="email" id="regEmail" placeholder="Email" required>
+            <input type="text" id="regBusiness" list="business-options" placeholder="Type or Select Business Type / Job" required>
+            <datalist id="business-options">
+                <option value="Homemade Food / Bakery">
+                <option value="Handmade Crafts / Arts">
+                <option value="Cafe / Beverage Corner">
+                <option value="Boutique / Accessories">
+                <option value="Cosmetics / Beauty Shop">
+            </datalist>
+            <div class="password-wrapper">
+                <input type="password" id="regPass" placeholder="Create Password" required minlength="6">
+                <span class="toggle-password" onclick="togglePassword('regPass', this)">Show</span>
+            </div>
+            <div class="password-wrapper">
+                <input type="password" id="regConfirm" placeholder="Confirm Password" required>
+                <span class="toggle-password" onclick="togglePassword('regConfirm', this)">Show</span>
+            </div>
+            <button type="submit" class="submit-btn">Get Started</button>
+        </form>
+        <a href="index.html" class="back-link">Already have an account? Log In</a>
+    </div>
+    <div id="successModal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3>Account Created!</h3>
+            <p>Your private workspace is ready for setup. Let us head over to the dashboard to organize your details.</p>
+            <a href="dashboard.html" class="modal-btn">Go to Dashboard</a>
+        </div>
+    </div>
+    <script type="module">
+        import { registerUser, updateUserProfile } from './js/auth.js';
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPass').value;
+            const confirm = document.getElementById('regConfirm').value;
+            const business = document.getElementById('regBusiness').value;
+            const errorDiv = document.getElementById('authError');
+            if (password !== confirm) { errorDiv.textContent = "Passwords do not match!"; errorDiv.style.display = 'block'; return; }
+            try {
+                await registerUser(email, password);
+                await updateUserProfile({ businessType: business });
+                document.getElementById('successModal').style.display = 'flex';
+            } catch (err) { errorDiv.textContent = err; errorDiv.style.display = 'block'; }
+        });
+        window.togglePassword = function(inputId, element) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") { input.type = "text"; element.textContent = "Hide"; }
+            else { input.type = "password"; element.textContent = "Show"; }
+        };
+    </script>
+</body>
+</html>
