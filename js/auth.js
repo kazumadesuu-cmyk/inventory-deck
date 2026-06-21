@@ -14,7 +14,9 @@ export async function registerUser(email, password) {
 // Update user profile
 export async function updateUserProfile(data) {
     try {
-        await updateProfile(auth.currentUser, { displayName: data.businessType });
+        await updateProfile(auth.currentUser, { 
+            displayName: data.displayName || data.businessType 
+        });
     } catch (error) {
         throw error.message;
     }

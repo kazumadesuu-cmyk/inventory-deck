@@ -14,6 +14,7 @@
         <p class="subtitle">Set up your private inventory space</p>
         <div id="authError" class="error-msg" style="display:none;"></div>
         <form id="registerForm">
+            <input type="text" id="regUsername" placeholder="Username" required>
             <input type="email" id="regEmail" placeholder="Email" required>
             <input type="text" id="regBusiness" list="business-options" placeholder="Type or Select Business Type / Job" required>
             <datalist id="business-options">
@@ -46,6 +47,7 @@
         import { registerUser, updateUserProfile } from './js/auth.js';
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const username = document.getElementById('regUsername').value;
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPass').value;
             const confirm = document.getElementById('regConfirm').value;
@@ -54,7 +56,7 @@
             if (password !== confirm) { errorDiv.textContent = "Passwords do not match!"; errorDiv.style.display = 'block'; return; }
             try {
                 await registerUser(email, password);
-                await updateUserProfile({ businessType: business });
+                await updateUserProfile({ displayName: username, businessType: business });
                 document.getElementById('successModal').style.display = 'flex';
             } catch (err) { errorDiv.textContent = err; errorDiv.style.display = 'block'; }
         });
