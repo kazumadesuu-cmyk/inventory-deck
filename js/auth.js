@@ -34,13 +34,26 @@ export async function logoutUser() {
     window.location.href = 'index.html';
 }
 
+// Track auth readiness
+window.authReady = false;
+
 onAuthStateChanged(auth, (user) => {
-    if (!user && !window.location.pathname.includes('index.html') && !window.location.pathname.includes('register.html')) {
-        window.location.href = 'index.html';
-    }
+    window.authReady = true;
+    
     if (user) {
         window.currentUser = user;
         const userDisplay = document.getElementById('userDisplay');
         if (userDisplay) userDisplay.textContent = user.displayName || user.email || '(User)';
+        
+        // Dispatch event so dashboard.js knows auth is ready
+        window.dispatchEvent(new CustomEvent('authReady', { detail: user }));
+    } else {
+        window.currentUser = null;
+        // Only redirect if we're NOT already on login or register page
+        const path = window.location.pathname;
+        const isAuthPage = path.includes('index.html') || path.includes('register.html') || path === '/' || path.endsWith('/');
+        if (!isAuthPage) {
+            window.location.href = 'index.html';
+        }
     }
 });

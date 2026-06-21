@@ -10,8 +10,27 @@ let unsubscribeActivity = null;
 let currentFocusProduct = null;
 let lowStockHistory = [];
 
-// Initialize dashboard
+// Initialize dashboard - wait for auth to be ready
 document.addEventListener('DOMContentLoaded', () => {
+    if (window.authReady && window.currentUser) {
+        initializeDashboard();
+    } else {
+        window.addEventListener('authReady', () => {
+            initializeDashboard();
+        });
+        
+        const authCheckInterval = setInterval(() => {
+            if (window.authReady && window.currentUser) {
+                clearInterval(authCheckInterval);
+                initializeDashboard();
+            }
+        }, 100);
+        
+        setTimeout(() => clearInterval(authCheckInterval), 10000);
+    }
+});
+
+function initializeDashboard() {
     // Real-time product listener
     unsubscribeProducts = subscribeToProducts((newProducts) => {
         products = newProducts;
@@ -32,11 +51,17 @@ document.addEventListener('DOMContentLoaded', () => {
         updateActivityPopup(logs);
     });
     
-    // Setup event listeners
+    // Logout button with confirmation
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
+            const confirmed = confirm('Are you sure you want to log out?');
+            if (!confirmed) return;
+            
             try {
+                if (unsubscribeProducts) unsubscribeProducts();
+                if (unsubscribeSales) unsubscribeSales();
+                if (unsubscribeActivity) unsubscribeActivity();
                 await logoutUser();
             } catch (err) {
                 console.error('Logout error:', err);
@@ -48,34 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modal form handler
     const modalForm = document.getElementById('modalForm');
     if (modalForm) {
-        modalForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('form_product_id').value;
-            const data = {
-                name: document.getElementById('form_name').value,
-                category: document.getElementById('form_category').value,
-                price: parseFloat(document.getElementById('form_price').value),
-                quantity: parseInt(document.getElementById('form_quantity').value) || 0,
-                alert_limit: parseInt(document.getElementById('form_alert_limit').value),
-                image_url: '',
-                items_sold: 0
-            };
-            
-            if (id) {
-                const productRef = doc(db, 'products', id);
-                await updateDoc(productRef, {
-                    name: data.name,
-                    category: data.category,
-                    price: data.price,
-                    alert_limit: data.alert_limit
-                });
-                showToast('Product updated successfully');
-            } else {
-                await addProduct(data);
-                showToast('Product added successfully');
-            }
-            closeModal();
-        });
+        modalForm.addEventListener('submit', handleFormSubmit);
     }
     
     // Warning modal dismiss
@@ -90,7 +88,59 @@ document.addEventListener('DOMContentLoaded', () => {
     updateNetworkStatus();
     window.addEventListener('online', updateNetworkStatus);
     window.addEventListener('offline', updateNetworkStatus);
-});
+}
+
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    const id = document.getElementById('form_product_id').value;
+    const data = {
+        name: document.getElementById('form_name').value,
+        category: document.getElementById('form_category').value,
+        price: parseFloat(document.getElementById('form_price').value),
+        quantity: parseInt(document.getElementById('form_quantity').value) || 0,
+        alert_limit: parseInt(document.getElementById('form_alert_limit').value),
+        image_url: '',
+        items_sold: 0
+    };
+    
+    const imageInput = document.getElementById('form_image');
+    if (imageInput && imageInput.files && imageInput.files[0]) {
+        try {
+            const base64Image = await readFileAsBase64(imageInput.files[0]);
+            data.image_url = base64Image;
+        } catch (err) {
+            console.error('Image read failed:', err);
+        }
+    }
+    
+    if (id) {
+        const productRef = doc(db, 'products', id);
+        const updateData = {
+            name: data.name,
+            category: data.category,
+            price: data.price,
+            alert_limit: data.alert_limit
+        };
+        if (data.image_url) {
+            updateData.image_url = data.image_url;
+        }
+        await updateDoc(productRef, updateData);
+        showToast('Product updated successfully');
+    } else {
+        await addProduct(data);
+        showToast('Product added successfully');
+    }
+    closeModal();
+}
+
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(e);
+        reader.readAsDataURL(file);
+    });
+}
 
 function updateNetworkStatus() {
     const badge = document.getElementById('networkStatusBadge');
@@ -179,7 +229,6 @@ async function restockOne(productId) {
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
     
-    // Record alerts with timestamp
     if (lowItems.length > 0) {
         lowItems.forEach(item => {
             const existing = lowStockHistory.find(h => h.id === item.id);
@@ -279,7 +328,6 @@ function updateActivityPopup(logs) {
     `}).join('');
 }
 
-// ==================== ALERTS PANEL ====================
 window.openAlertsPanel = function() {
     const panel = document.getElementById('alertsPanel');
     if (panel) panel.classList.add('alerts-panel-open');
@@ -310,7 +358,6 @@ function updateAlertsPanel() {
     `).join('');
 }
 
-// ==================== MODAL FUNCTIONS ====================
 window.openPopupModal = function(id) {
     const modal = document.getElementById(id);
     if (modal) modal.style.display = 'flex';
@@ -453,7 +500,6 @@ window.deleteProductItem = async function(id) {
     }
 };
 
-// ==================== TOAST & ALERTS ====================
 window.showToast = function(message, type = 'success') {
     let container = document.querySelector('.toast-container');
     if (!container) {
@@ -493,7 +539,6 @@ window.removeFloatingAlert = function() {
     container.style.display = 'none';
 };
 
-// ==================== CATEGORY MODE ====================
 window.openCategoryModeModal = function() {
     const grouped = products.reduce((acc, p) => {
         const cat = p.category || 'Uncategorized';
@@ -518,7 +563,6 @@ window.openCategoryModeModal = function() {
     openPopupModal('categoryModePopup');
 };
 
-// ==================== STOCK SCAN ====================
 window.executeImmediateStockScan = function(showModal = true) {
     const lowItems = products.filter(p => p.quantity <= p.alert_limit);
     if (lowItems.length > 0 && showModal) {
