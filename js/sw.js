@@ -1,15 +1,15 @@
 const CACHE_NAME = 'stock-space-cache-v1';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/register.html',
-  '/dashboard.html',
-  '/css/style.css',
-  '/js/firebase-config.js',
-  '/js/auth.js',
-  '/js/db.js',
-  '/js/dashboard.js',
-  '/manifest.json'
+  './',
+  './index.html',
+  './register.html',
+  './dashboard.html',
+  './css/style.css',
+  './js/firebase-config.js',
+  './js/auth.js',
+  './js/db.js',
+  './js/dashboard.js',
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -52,7 +52,7 @@ self.addEventListener('notificationclick', (event) => {
       for (const client of clientList) {
         if ('focus' in client) return client.focus();
       }
-      if (clients.openWindow) return clients.openWindow('/dashboard.html');
+      if (clients.openWindow) return clients.openWindow('./dashboard.html');
     })
   );
 });

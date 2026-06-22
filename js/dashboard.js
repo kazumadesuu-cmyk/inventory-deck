@@ -217,22 +217,33 @@ function escapeHtml(text) {
 }
 
 async function sellOne(productId) {
-    const product = products.find(p => p.id === productId);
-    if (!product || product.quantity < 1) {
-        showToast('Not enough stock!', 'error');
-        return;
+    try {
+        const product = products.find(p => p.id === productId);
+        if (!product || product.quantity < 1) {
+            showToast('Not enough stock!', 'error');
+            return;
+        }
+        
+        console.log('Selling 1x', product.name, 'at price', product.price);
+        await updateStock(productId, product.quantity - 1, (product.items_sold || 0) + 1, 'SELL', 1);
+        showToast(`Sold 1x ${product.name}`);
+    } catch (error) {
+        console.error('sellOne error:', error);
+        showToast('Failed to record sale: ' + error.message, 'error');
     }
-    
-    await updateStock(productId, product.quantity - 1, (product.items_sold || 0) + 1, 'SELL', 1);
-    showToast(`Sold 1x ${product.name}`);
 }
 
 async function restockOne(productId) {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-    
-    await updateStock(productId, product.quantity + 1, product.items_sold || 0, 'RESTOCK', 1);
-    showToast(`Restocked 1x ${product.name}`);
+    try {
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+        
+        await updateStock(productId, product.quantity + 1, product.items_sold || 0, 'RESTOCK', 1);
+        showToast(`Restocked 1x ${product.name}`);
+    } catch (error) {
+        console.error('restockOne error:', error);
+        showToast('Failed to record restock: ' + error.message, 'error');
+    }
 }
 
 // Expose to window so inline onclick handlers work
@@ -342,7 +353,7 @@ function updateRevenuePopup(sales) {
         return;
     }
     tbody.innerHTML = sales.map(s => {
-        const date = s.sold_at ? new Date(s.sold_at.toDate()).toLocaleString() : 'N/A';
+        const date = s.sold_at ? (typeof s.sold_at.toDate === 'function' ? new Date(s.sold_at.toDate()) : new Date(s.sold_at)).toLocaleString() : 'N/A';
         const revenue = s.revenue !== undefined ? s.revenue : ((s.price_sold || 0) * (s.quantity_sold || 0));
         return `
         <tr class="animate-fade-in">
@@ -363,7 +374,7 @@ function updateActivityPopup(logs) {
         return;
     }
     tbody.innerHTML = logs.map((log, index) => {
-        const date = log.created_at ? new Date(log.created_at.toDate()).toLocaleString() : 'N/A';
+        const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
         const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
         const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
         return `
@@ -385,7 +396,7 @@ function updateAlertsPopup(alerts) {
         return;
     }
     tbody.innerHTML = alerts.map((alert, index) => {
-        const date = alert.created_at ? new Date(alert.created_at.toDate()).toLocaleString() : 'N/A';
+        const date = alert.created_at ? (typeof alert.created_at.toDate === 'function' ? new Date(alert.created_at.toDate()) : new Date(alert.created_at)).toLocaleString() : 'N/A';
         return `
         <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
             <td style="font-size: 12px; color: #94a3b8;">${date}</td>
@@ -570,6 +581,39 @@ window.deleteProductItem = async function(id) {
     }
 };
 
+// ==================== CATEGORY MODAL ====================
+window.openCategoryModeModal = function() {
+    const container = document.getElementById('categoryModeContainer');
+    if (!container) return;
+
+    if (products.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-title">No Products Yet</div><p class="empty-state-desc">Add some products to see them organized by category.</p></div>';
+    } else {
+        const grouped = products.reduce((acc, p) => {
+            const cat = p.category || 'Uncategorized';
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(p);
+            return acc;
+        }, {});
+
+        container.innerHTML = Object.entries(grouped).map(([cat, items]) => `
+            <div class="category-group" style="margin-bottom: 20px;">
+                <div style="font-size: 16px; font-weight: 700; color: #0284c7; margin-bottom: 10px; padding: 8px 16px; background: #e0f2fe; border-radius: 12px;">${escapeHtml(cat)} (${items.length})</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                    ${items.map(item => `
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${escapeHtml(item.name)}</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Stock: ${item.quantity} | ₱${item.price ? item.price.toFixed(2) : '0.00'}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    openPopupModal('categoryModePopup');
+};
+
 // ==================== TOAST & ALERTS ====================
 window.showToast = function(message, type = 'success') {
     let container = document.querySelector('.toast-container');
@@ -583,64 +627,36 @@ window.showToast = function(message, type = 'success') {
     toast.className = `toast ${type} animate-slide-in`;
     toast.innerHTML = `
         <span class="toast-message">${escapeHtml(message)}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+        <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
     `;
     container.appendChild(toast);
     
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
+        toast.classList.add('animate-fade-out');
         setTimeout(() => toast.remove(), 300);
     }, 4000);
 };
 
-window.renderFloatingAlert = function(items) {
-    const container = document.getElementById('ignoredAlertsContainer');
-    if (!container) return;
-    container.innerHTML = items.map((item, index) => 
-        `<div class="alert-chip animate-slide-in" style="animation-delay: ${index * 0.1}s">⚠️ ${escapeHtml(item.name)}: ${item.quantity} left</div>`
-    ).join('');
-    container.style.display = 'flex';
-};
-
-window.removeFloatingAlert = function() {
-    const container = document.getElementById('ignoredAlertsContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    container.style.display = 'none';
-};
-
-// ==================== CATEGORY MODE ====================
-window.openCategoryModeModal = function() {
-    const grouped = products.reduce((acc, p) => {
-        const cat = p.category || 'Uncategorized';
-        acc[cat] = acc[cat] || [];
-        acc[cat].push(p);
-        return acc;
-    }, {});
-    
-    const html = Object.entries(grouped).map(([cat, items]) => `
-        <div style="margin-bottom: 24px;" class="animate-fade-in">
-            <h4 style="color: #0284c7; margin-bottom: 12px; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">${escapeHtml(cat)}</h4>
-            ${items.map(p => `
-                <div style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;" class="animate-fade-in">
-                    <span style="font-weight: 600; color: #1e293b;">${escapeHtml(p.name)}</span>
-                    <span style="color: ${p.quantity <= p.alert_limit ? '#ef4444' : '#22c55e'}; font-weight: 700;">${p.quantity} in stock</span>
-                </div>
-            `).join('')}
-        </div>
-    `).join('');
-    
-    document.getElementById('categoryModeContainer').innerHTML = html || '<div style="text-align:center; color:#94a3b8; padding: 40px;">No products to categorize.</div>';
-    openPopupModal('categoryModePopup');
-};
-
-// ==================== STOCK SCAN ====================
-window.executeImmediateStockScan = function(showModal = true) {
-    const lowItems = products.filter(p => p.quantity <= p.alert_limit);
-    if (lowItems.length > 0 && showModal) {
-        showLowStockModal(lowItems);
-    } else if (lowItems.length === 0 && showModal) {
-        showToast('All stock levels are healthy!', 'success');
+// ==================== FLOATING ALERT ====================
+function renderFloatingAlert(lowItems) {
+    let alert = document.getElementById('floatingStockAlert');
+    if (!alert) {
+        alert = document.createElement('div');
+        alert.id = 'floatingStockAlert';
+        alert.className = 'floating-alert';
+        document.body.appendChild(alert);
     }
-};
+    alert.innerHTML = `
+        <div class="floating-alert-content">
+            <span class="floating-alert-icon">⚠️</span>
+            <span class="floating-alert-text">${lowItems.length} item(s) low on stock</span>
+            <button class="floating-alert-close" onclick="document.getElementById('floatingStockAlert').style.display='none'">&times;</button>
+        </div>
+    `;
+    alert.style.display = 'block';
+}
+
+function removeFloatingAlert() {
+    const alert = document.getElementById('floatingStockAlert');
+    if (alert) alert.style.display = 'none';
+}
