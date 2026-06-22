@@ -9,6 +9,7 @@ body {
     margin: 0;
     min-height: 100vh;
     color: #3a4558;
+    background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%);
 }
 
 body.auth-page {

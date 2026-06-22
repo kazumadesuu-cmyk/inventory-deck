@@ -15,7 +15,7 @@ export async function addProduct(productData) {
         user_id: window.currentUser.uid,
         created_at: serverTimestamp()
     });
-    await logActivity(productData.name, 'ADD', productData.quantity);
+    await logActivity(productData.name, 'ADD', productData.quantity, 0);
     return docRef.id;
 }
 
@@ -36,28 +36,34 @@ export function subscribeToProducts(callback) {
 }
 
 // Update product (sell/restock)
-export async function updateStock(productId, newQuantity, itemsSoldDelta, action) {
+// newItemsSold = total cumulative items sold after this transaction
+// deltaQty = how many items changed in THIS transaction
+export async function updateStock(productId, newQuantity, newItemsSold, action, deltaQty) {
     const productRef = doc(db, PRODUCTS_COLLECTION, productId);
+    const productSnap = await getDoc(productRef);
+    const product = productSnap.data();
+    
     await updateDoc(productRef, {
         quantity: newQuantity,
-        items_sold: itemsSoldDelta
+        items_sold: newItemsSold
     });
     
-    // Log sale if selling
+    // Log sale to sales_history if selling
     if (action === 'SELL') {
-        const productSnap = await getDoc(productRef);
-        const product = productSnap.data();
+        const revenue = (product.price || 0) * deltaQty;
         await addDoc(collection(db, SALES_COLLECTION), {
             user_id: window.currentUser.uid,
             product_name: product.name,
             category: product.category,
-            price_sold: product.price,
-            quantity_sold: Math.abs(itemsSoldDelta),
+            price_sold: product.price || 0,
+            quantity_sold: deltaQty,
+            revenue: revenue,
             sold_at: serverTimestamp()
         });
+        await logActivity(product.name, action, deltaQty, revenue);
+    } else {
+        await logActivity(product.name, action, deltaQty, 0);
     }
-    
-    await logActivity(product.name, action, Math.abs(itemsSoldDelta));
 }
 
 // Delete product
@@ -66,12 +72,13 @@ export async function deleteProduct(productId) {
 }
 
 // Log activity
-async function logActivity(productName, action, quantity) {
+async function logActivity(productName, action, quantity, revenue = 0) {
     await addDoc(collection(db, ACTIVITY_COLLECTION), {
         user_id: window.currentUser.uid,
         product_name: productName,
         action_type: action,
         quantity: quantity,
+        revenue: revenue,
         created_at: serverTimestamp()
     });
 }

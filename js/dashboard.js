@@ -187,8 +187,8 @@ function renderProductCards(productList) {
             </div>
             <div class="button-drawer">
                 <div class="action-row-pair">
-                    <button class="btn-action btn-sell" onclick="event.stopPropagation(); sellOne('${product.id}')">Sold (-1)</button>
-                    <button class="btn-action btn-restock" onclick="event.stopPropagation(); restockOne('${product.id}')">Restock (+1)</button>
+                    <button class="btn-action btn-sell" onclick="event.stopPropagation(); window.sellOne('${product.id}')">Sold (-1)</button>
+                    <button class="btn-action btn-restock" onclick="event.stopPropagation(); window.restockOne('${product.id}')">Restock (+1)</button>
                 </div>
                 <div class="utility-row">
                     <button class="btn-action btn-edit" onclick="event.stopPropagation(); editProduct('${product.id}')">Edit</button>
@@ -214,7 +214,7 @@ async function sellOne(productId) {
         return;
     }
     
-    await updateStock(productId, product.quantity - 1, (product.items_sold || 0) + 1, 'SELL');
+    await updateStock(productId, product.quantity - 1, (product.items_sold || 0) + 1, 'SELL', 1);
     showToast(`Sold 1x ${product.name}`);
 }
 
@@ -222,9 +222,13 @@ async function restockOne(productId) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
     
-    await updateStock(productId, product.quantity + 1, product.items_sold || 0, 'RESTOCK');
+    await updateStock(productId, product.quantity + 1, product.items_sold || 0, 'RESTOCK', 1);
     showToast(`Restocked 1x ${product.name}`);
 }
+
+// Expose to window so inline onclick handlers work
+window.sellOne = sellOne;
+window.restockOne = restockOne;
 
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
@@ -266,7 +270,7 @@ function updateSummary(productList) {
 function updateTotalRevenue(sales) {
     const display = document.getElementById('totalRevenueDisplayNode');
     if (!display) return;
-    const total = sales.reduce((sum, s) => sum + (s.price_sold * s.quantity_sold), 0);
+    const total = sales.reduce((sum, s) => sum + ((s.price_sold || 0) * (s.quantity_sold || 0)), 0);
     display.textContent = '₱' + total.toFixed(2);
     display.setAttribute('data-raw-revenue', total);
 }
@@ -297,12 +301,13 @@ function updateRevenuePopup(sales) {
     }
     tbody.innerHTML = sales.map(s => {
         const date = s.sold_at ? new Date(s.sold_at.toDate()).toLocaleString() : 'N/A';
+        const revenue = (s.price_sold || 0) * (s.quantity_sold || 0);
         return `
         <tr>
             <td>${escapeHtml(s.product_name)}</td>
             <td><span class="badge badge-pink">${escapeHtml(s.category)}</span></td>
-            <td>${s.quantity_sold}</td>
-            <td style="color: #22c55e; font-weight: 700;">₱${(s.price_sold * s.quantity_sold).toFixed(2)}</td>
+            <td>${s.quantity_sold || 0}</td>
+            <td style="color: #22c55e; font-weight: 700;">₱${revenue.toFixed(2)}</td>
             <td style="font-size: 12px; color: #94a3b8;">${date}</td>
         </tr>
     `}).join('');
@@ -312,22 +317,25 @@ function updateActivityPopup(logs) {
     const tbody = document.getElementById('auditLogBookTableBody');
     if (!tbody) return;
     if (logs.length === 0) {
-        tbody.innerHTML = '<tr id="activityEmptyRow"><td colspan="4" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr>';
+        tbody.innerHTML = '<tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr>';
         return;
     }
     tbody.innerHTML = logs.map(log => {
         const date = log.created_at ? new Date(log.created_at.toDate()).toLocaleString() : 'N/A';
         const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
+        const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
         return `
         <tr>
             <td style="font-size: 12px; color: #94a3b8;">${date}</td>
             <td>${escapeHtml(log.product_name)}</td>
             <td><span style="color: ${actionColor}; font-weight: 700;">${log.action_type}</span></td>
-            <td>Qty: ${log.quantity}</td>
+            <td>${log.quantity || 0}</td>
+            <td>${revenueText}</td>
         </tr>
     `}).join('');
 }
 
+// ==================== ALERTS PANEL ====================
 window.openAlertsPanel = function() {
     const panel = document.getElementById('alertsPanel');
     if (panel) panel.classList.add('alerts-panel-open');
@@ -358,6 +366,7 @@ function updateAlertsPanel() {
     `).join('');
 }
 
+// ==================== MODAL FUNCTIONS ====================
 window.openPopupModal = function(id) {
     const modal = document.getElementById(id);
     if (modal) modal.style.display = 'flex';
@@ -446,10 +455,10 @@ window.handleBundleAction = async function() {
             showToast('Not enough stock!', 'error');
             return;
         }
-        await updateStock(product.id, product.quantity - qty, (product.items_sold || 0) + qty, 'SELL');
+        await updateStock(product.id, product.quantity - qty, (product.items_sold || 0) + qty, 'SELL', qty);
         showToast(`Sold ${qty}x ${product.name}`);
     } else {
-        await updateStock(product.id, product.quantity + qty, product.items_sold || 0, 'RESTOCK');
+        await updateStock(product.id, product.quantity + qty, product.items_sold || 0, 'RESTOCK', qty);
         showToast(`Restocked ${qty}x ${product.name}`);
     }
     closePopupModal('focusModal');
@@ -500,6 +509,7 @@ window.deleteProductItem = async function(id) {
     }
 };
 
+// ==================== TOAST & ALERTS ====================
 window.showToast = function(message, type = 'success') {
     let container = document.querySelector('.toast-container');
     if (!container) {
@@ -539,6 +549,7 @@ window.removeFloatingAlert = function() {
     container.style.display = 'none';
 };
 
+// ==================== CATEGORY MODE ====================
 window.openCategoryModeModal = function() {
     const grouped = products.reduce((acc, p) => {
         const cat = p.category || 'Uncategorized';
@@ -563,6 +574,7 @@ window.openCategoryModeModal = function() {
     openPopupModal('categoryModePopup');
 };
 
+// ==================== STOCK SCAN ====================
 window.executeImmediateStockScan = function(showModal = true) {
     const lowItems = products.filter(p => p.quantity <= p.alert_limit);
     if (lowItems.length > 0 && showModal) {
