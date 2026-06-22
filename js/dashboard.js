@@ -1,4 +1,4 @@
-import { subscribeToProducts, updateStock, addProduct, deleteProduct, subscribeToSales, subscribeToActivity } from './db.js';
+import { subscribeToProducts, updateStock, addProduct, deleteProduct, subscribeToSales, subscribeToActivity, subscribeToStockAlerts, logStockAlert } from './db.js';
 import { logoutUser } from './auth.js';
 import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { db } from './firebase-config.js';
@@ -7,8 +7,10 @@ let products = [];
 let unsubscribeProducts = null;
 let unsubscribeSales = null;
 let unsubscribeActivity = null;
+let unsubscribeAlerts = null;
 let currentFocusProduct = null;
 let lowStockHistory = [];
+let alertedProductIds = new Set();
 
 // Initialize dashboard - wait for auth to be ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,6 +53,11 @@ function initializeDashboard() {
         updateActivityPopup(logs);
     });
     
+    // Stock alerts listener
+    unsubscribeAlerts = subscribeToStockAlerts((alerts) => {
+        updateAlertsPopup(alerts);
+    });
+    
     // Logout button with confirmation
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
@@ -62,6 +69,7 @@ function initializeDashboard() {
                 if (unsubscribeProducts) unsubscribeProducts();
                 if (unsubscribeSales) unsubscribeSales();
                 if (unsubscribeActivity) unsubscribeActivity();
+                if (unsubscribeAlerts) unsubscribeAlerts();
                 await logoutUser();
             } catch (err) {
                 console.error('Logout error:', err);
@@ -164,14 +172,15 @@ function renderProductCards(productList) {
     grid.innerHTML = '';
     
     if (productList.length === 0) {
-        grid.innerHTML = '<div class="empty-view">Your inventory deck is empty. Tap add to start!</div>';
+        grid.innerHTML = '<div class="empty-view animate-fade-in">Your inventory deck is empty. Tap add to start!</div>';
         return;
     }
     
-    productList.forEach(product => {
+    productList.forEach((product, index) => {
         const isLow = product.quantity <= product.alert_limit;
         const card = document.createElement('div');
-        card.className = `product-card cat-${getCategoryClass(product.category)}`;
+        card.className = `product-card cat-${getCategoryClass(product.category)} animate-fade-in`;
+        card.style.animationDelay = `${index * 0.08}s`;
         card.id = `card-product-${product.id}`;
         card.innerHTML = `
             <div class="status-dot ${isLow ? 'dot-low' : 'dot-ok'}"></div>
@@ -235,6 +244,10 @@ function checkLowStock(productList) {
     
     if (lowItems.length > 0) {
         lowItems.forEach(item => {
+            if (!alertedProductIds.has(item.id)) {
+                alertedProductIds.add(item.id);
+                logStockAlert(item.id, item.name, item.quantity, item.alert_limit);
+            }
             const existing = lowStockHistory.find(h => h.id === item.id);
             if (!existing) {
                 lowStockHistory.unshift({
@@ -249,17 +262,39 @@ function checkLowStock(productList) {
                 existing.timestamp = new Date().toLocaleString();
             }
         });
+        
         renderFloatingAlert(lowItems);
         updateAlertsPanel();
+        showLowStockModal(lowItems);
+        
         if (Notification.permission === 'granted') {
             new Notification('Stock Alert', {
                 body: `${lowItems.length} items are low on stock`
             });
         }
     } else {
+        lowStockHistory = [];
+        alertedProductIds.clear();
         removeFloatingAlert();
         updateAlertsPanel();
     }
+}
+
+function showLowStockModal(lowItems) {
+    const list = document.getElementById('lowStockItemsListContainer');
+    if (!list) return;
+    
+    list.innerHTML = lowItems.map(p => `
+        <div class="low-stock-item animate-slide-in">
+            <div class="low-stock-icon">⚠️</div>
+            <div class="low-stock-info">
+                <strong>${escapeHtml(p.name)}</strong>
+                <span>${p.quantity} remaining (limit: ${p.alert_limit})</span>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('warningModal').style.display = 'flex';
 }
 
 function updateSummary(productList) {
@@ -270,7 +305,14 @@ function updateSummary(productList) {
 function updateTotalRevenue(sales) {
     const display = document.getElementById('totalRevenueDisplayNode');
     if (!display) return;
-    const total = sales.reduce((sum, s) => sum + ((s.price_sold || 0) * (s.quantity_sold || 0)), 0);
+    
+    const total = sales.reduce((sum, s) => {
+        if (s.revenue !== undefined) {
+            return sum + s.revenue;
+        }
+        return sum + ((s.price_sold || 0) * (s.quantity_sold || 0));
+    }, 0);
+    
     display.textContent = '₱' + total.toFixed(2);
     display.setAttribute('data-raw-revenue', total);
 }
@@ -301,9 +343,9 @@ function updateRevenuePopup(sales) {
     }
     tbody.innerHTML = sales.map(s => {
         const date = s.sold_at ? new Date(s.sold_at.toDate()).toLocaleString() : 'N/A';
-        const revenue = (s.price_sold || 0) * (s.quantity_sold || 0);
+        const revenue = s.revenue !== undefined ? s.revenue : ((s.price_sold || 0) * (s.quantity_sold || 0));
         return `
-        <tr>
+        <tr class="animate-fade-in">
             <td>${escapeHtml(s.product_name)}</td>
             <td><span class="badge badge-pink">${escapeHtml(s.category)}</span></td>
             <td>${s.quantity_sold || 0}</td>
@@ -320,17 +362,36 @@ function updateActivityPopup(logs) {
         tbody.innerHTML = '<tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr>';
         return;
     }
-    tbody.innerHTML = logs.map(log => {
+    tbody.innerHTML = logs.map((log, index) => {
         const date = log.created_at ? new Date(log.created_at.toDate()).toLocaleString() : 'N/A';
         const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
         const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
         return `
-        <tr>
+        <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
             <td style="font-size: 12px; color: #94a3b8;">${date}</td>
             <td>${escapeHtml(log.product_name)}</td>
             <td><span style="color: ${actionColor}; font-weight: 700;">${log.action_type}</span></td>
             <td>${log.quantity || 0}</td>
             <td>${revenueText}</td>
+        </tr>
+    `}).join('');
+}
+
+function updateAlertsPopup(alerts) {
+    const tbody = document.getElementById('alertsHistoryTableBody');
+    if (!tbody) return;
+    if (alerts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding: 24px;">No stock alerts recorded yet.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = alerts.map((alert, index) => {
+        const date = alert.created_at ? new Date(alert.created_at.toDate()).toLocaleString() : 'N/A';
+        return `
+        <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
+            <td style="font-size: 12px; color: #94a3b8;">${date}</td>
+            <td>${escapeHtml(alert.product_name)}</td>
+            <td><span style="color: #ef4444; font-weight: 700;">${alert.quantity}</span></td>
+            <td>${alert.alert_limit}</td>
         </tr>
     `}).join('');
 }
@@ -356,7 +417,7 @@ function updateAlertsPanel() {
     }
     
     content.innerHTML = lowStockHistory.map(alert => `
-        <div class="alert-history-item">
+        <div class="alert-history-item animate-slide-in">
             <div class="alert-history-name">${escapeHtml(alert.name)}</div>
             <div class="alert-history-details">
                 <span class="alert-history-qty">${alert.quantity} left</span>
@@ -519,7 +580,7 @@ window.showToast = function(message, type = 'success') {
     }
     
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+    toast.className = `toast ${type} animate-slide-in`;
     toast.innerHTML = `
         <span class="toast-message">${escapeHtml(message)}</span>
         <button class="toast-close" onclick="this.parentElement.remove()">×</button>
@@ -536,8 +597,8 @@ window.showToast = function(message, type = 'success') {
 window.renderFloatingAlert = function(items) {
     const container = document.getElementById('ignoredAlertsContainer');
     if (!container) return;
-    container.innerHTML = items.map(item => 
-        `<div class="alert-chip">⚠️ ${escapeHtml(item.name)}: ${item.quantity} left</div>`
+    container.innerHTML = items.map((item, index) => 
+        `<div class="alert-chip animate-slide-in" style="animation-delay: ${index * 0.1}s">⚠️ ${escapeHtml(item.name)}: ${item.quantity} left</div>`
     ).join('');
     container.style.display = 'flex';
 };
@@ -559,10 +620,10 @@ window.openCategoryModeModal = function() {
     }, {});
     
     const html = Object.entries(grouped).map(([cat, items]) => `
-        <div style="margin-bottom: 24px;">
+        <div style="margin-bottom: 24px;" class="animate-fade-in">
             <h4 style="color: #0284c7; margin-bottom: 12px; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">${escapeHtml(cat)}</h4>
             ${items.map(p => `
-                <div style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                <div style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;" class="animate-fade-in">
                     <span style="font-weight: 600; color: #1e293b;">${escapeHtml(p.name)}</span>
                     <span style="color: ${p.quantity <= p.alert_limit ? '#ef4444' : '#22c55e'}; font-weight: 700;">${p.quantity} in stock</span>
                 </div>
@@ -578,14 +639,7 @@ window.openCategoryModeModal = function() {
 window.executeImmediateStockScan = function(showModal = true) {
     const lowItems = products.filter(p => p.quantity <= p.alert_limit);
     if (lowItems.length > 0 && showModal) {
-        const list = document.getElementById('lowStockItemsListContainer');
-        list.innerHTML = lowItems.map(p => `
-            <div style="padding: 14px; background: #fff1f2; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #ef4444;">
-                <strong style="color: #991b1b;">${escapeHtml(p.name)}</strong>
-                <span style="color: #64748b; margin-left: 8px;">— ${p.quantity} remaining (limit: ${p.alert_limit})</span>
-            </div>
-        `).join('');
-        document.getElementById('warningModal').style.display = 'flex';
+        showLowStockModal(lowItems);
     } else if (lowItems.length === 0 && showModal) {
         showToast('All stock levels are healthy!', 'success');
     }

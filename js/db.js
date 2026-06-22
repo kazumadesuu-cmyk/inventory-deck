@@ -7,6 +7,7 @@ import {
 const PRODUCTS_COLLECTION = 'products';
 const SALES_COLLECTION = 'sales_history';
 const ACTIVITY_COLLECTION = 'activity_log';
+const ALERTS_COLLECTION = 'stock_alerts';
 
 // Add product
 export async function addProduct(productData) {
@@ -36,8 +37,6 @@ export function subscribeToProducts(callback) {
 }
 
 // Update product (sell/restock)
-// newItemsSold = total cumulative items sold after this transaction
-// deltaQty = how many items changed in THIS transaction
 export async function updateStock(productId, newQuantity, newItemsSold, action, deltaQty) {
     const productRef = doc(db, PRODUCTS_COLLECTION, productId);
     const productSnap = await getDoc(productRef);
@@ -83,6 +82,18 @@ async function logActivity(productName, action, quantity, revenue = 0) {
     });
 }
 
+// Log stock alert to persistent history
+export async function logStockAlert(productId, productName, quantity, alertLimit) {
+    await addDoc(collection(db, ALERTS_COLLECTION), {
+        user_id: window.currentUser.uid,
+        product_id: productId,
+        product_name: productName,
+        quantity: quantity,
+        alert_limit: alertLimit,
+        created_at: serverTimestamp()
+    });
+}
+
 // Get activity log
 export function subscribeToActivity(callback) {
     const q = query(
@@ -116,5 +127,23 @@ export function subscribeToSales(callback) {
             ...doc.data()
         }));
         callback(sales);
+    });
+}
+
+// Get stock alert history
+export function subscribeToStockAlerts(callback) {
+    const q = query(
+        collection(db, ALERTS_COLLECTION),
+        where("user_id", "==", window.currentUser.uid),
+        orderBy("created_at", "desc"),
+        limit(100)
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+        const alerts = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        callback(alerts);
     });
 }

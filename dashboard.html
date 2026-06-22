@@ -16,6 +16,7 @@
         <a href="#summary" class="sidebar-menu-item sub-node" onclick="openPopupModal('productsPopup')">Inventory summary</a>
         <a href="#alerts" class="sidebar-menu-item sub-node" onclick="openAlertsPanel()">Low-stock alerts</a>
         <a href="#activity" class="sidebar-menu-item sub-node" onclick="openPopupModal('recentActivityLogBookPopup')">Recent activity</a>
+        <a href="#alert-history" class="sidebar-menu-item sub-node" onclick="openPopupModal('stockAlertHistoryPopup')">Alert history</a>
         <a href="#products" class="sidebar-menu-item main-node">Products / Items</a>
         <a href="#list" class="sidebar-menu-item sub-node" onclick="openPopupModal('productsPopup')">Product list</a>
         <a href="#add" class="sidebar-menu-item sub-node" onclick="openAddModal()">Add product</a>
@@ -140,6 +141,16 @@
             <tbody id="auditLogBookTableBody"><tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr></tbody>
         </table>
         <button type="button" class="modal-close-btn" onclick="closePopupModal('recentActivityLogBookPopup')">Close Log Book</button>
+    </div>
+</div>
+<div class="modal-overlay" id="stockAlertHistoryPopup" onclick="closePopupModalOnBackground(event, 'stockAlertHistoryPopup')">
+    <div class="modal-box wide-modal-box">
+        <h3>🚨 Stock Alert History</h3>
+        <table class="popup-table">
+            <thead><tr><th>Time</th><th>Product</th><th>Stock Left</th><th>Alert Limit</th></tr></thead>
+            <tbody id="alertsHistoryTableBody"><tr><td colspan="4" style="text-align:center; color:#64748b; padding: 24px;">No stock alerts recorded yet.</td></tr></tbody>
+        </table>
+        <button type="button" class="modal-close-btn" onclick="closePopupModal('stockAlertHistoryPopup')">Close History</button>
     </div>
 </div>
 <div class="modal-overlay" id="categoryModePopup" onclick="closePopupModalOnBackground(event, 'categoryModePopup')">
