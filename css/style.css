@@ -218,7 +218,12 @@ button.submit-btn:active,
     align-items: center;
     backdrop-filter: blur(8px);
     z-index: 99999;
-    animation: fadeIn 0.3s ease;
+    animation: modalBackdropIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+.modal-overlay.closing {
+    animation: modalBackdropOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .modal-box {
@@ -227,7 +232,12 @@ button.submit-btn:active,
     border-radius: 24px;
     width: 420px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-    animation: scaleIn 0.3s ease;
+    animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+}
+
+.modal-box.closing {
+    animation: fadeOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .modal-box h3 {
@@ -650,10 +660,10 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     padding: 24px;
     box-shadow: 0 8px 25px rgba(14, 116, 144, 0.08);
     position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     cursor: pointer;
-    animation: fadeIn 0.5s ease;
-    animation-fill-mode: both;
+    animation: cardStaggerIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    opacity: 0;
 }
 
 .product-card:hover {
@@ -1202,22 +1212,27 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 
 /* ---------- ANIMATIONS ---------- */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(30px) scale(0.96); }
+    60% { opacity: 1; transform: translateY(-4px) scale(1.01); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes slideInRight {
-    from { opacity: 0; transform: translateX(30px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(40px) scale(0.95); }
+    70% { opacity: 1; transform: translateX(-6px) scale(1.02); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 @keyframes slideInLeft {
-    from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(-30px) scale(0.95); }
+    70% { opacity: 1; transform: translateX(4px) scale(1.02); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.9); }
+    from { opacity: 0; transform: scale(0.85); }
+    60% { opacity: 1; transform: scale(1.04); }
+    80% { transform: scale(0.98); }
     to { opacity: 1; transform: scale(1); }
 }
 
@@ -1239,23 +1254,60 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     50% { transform: translateY(-5px); }
 }
 
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateX(0) scale(1); }
+    40% { opacity: 0.6; transform: translateX(10px) scale(0.98); }
+    to { opacity: 0; transform: translateX(30px) scale(0.9); }
+}
+
+@keyframes modalBackdropIn {
+    from { opacity: 0; backdrop-filter: blur(0px); }
+    to { opacity: 1; backdrop-filter: blur(8px); }
+}
+
+@keyframes modalBackdropOut {
+    from { opacity: 1; backdrop-filter: blur(8px); }
+    to { opacity: 0; backdrop-filter: blur(0px); }
+}
+
+@keyframes cardStaggerIn {
+    from { opacity: 0; transform: translateY(40px) scale(0.92); }
+    50% { opacity: 1; transform: translateY(-6px) scale(1.02); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes floatIn {
+    from { opacity: 0; transform: translateY(20px) rotateX(-10deg); }
+    60% { opacity: 1; transform: translateY(-4px) rotateX(2deg); }
+    to { opacity: 1; transform: translateY(0) rotateX(0); }
+}
+
+@keyframes shimmerSlide {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+}
+
 @keyframes shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
 
 .animate-fade-in {
-    animation: fadeIn 0.5s ease forwards;
+    animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     opacity: 0;
 }
 
 .animate-slide-in {
-    animation: slideInRight 0.4s ease forwards;
+    animation: slideInRight 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     opacity: 0;
 }
 
 .animate-scale-in {
-    animation: scaleIn 0.3s ease forwards;
+    animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-fade-out {
+    animation: fadeOut 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
 }
 
 .animate-pulse {
@@ -1333,9 +1385,10 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     align-items: center;
     gap: 12px;
     min-width: 300px;
-    animation: slideInRight 0.4s ease;
+    animation: slideInRight 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     border-left: 4px solid #0284c7;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: right center;
 }
 
 .toast:hover {
@@ -1379,7 +1432,7 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     background: #fff;
     box-shadow: -4px 0 30px rgba(0,0,0,0.1);
     z-index: 999999;
-    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: right 0.5s cubic-bezier(0.22, 1, 0.36, 1);
     overflow-y: auto;
 }
 

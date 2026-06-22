@@ -88,7 +88,7 @@ function initializeDashboard() {
     const warningIgnoreBtn = document.getElementById('warningIgnoreBtn');
     if (warningIgnoreBtn) {
         warningIgnoreBtn.addEventListener('click', () => {
-            document.getElementById('warningModal').style.display = 'none';
+            closePopupModal('warningModal');
         });
     }
     
@@ -179,8 +179,9 @@ function renderProductCards(productList) {
     productList.forEach((product, index) => {
         const isLow = product.quantity <= product.alert_limit;
         const card = document.createElement('div');
-        card.className = `product-card cat-${getCategoryClass(product.category)} animate-fade-in`;
-        card.style.animationDelay = `${index * 0.08}s`;
+        card.className = `product-card cat-${getCategoryClass(product.category)}`;
+        card.style.animationDelay = `${index * 0.1}s`;
+
         card.id = `card-product-${product.id}`;
         card.innerHTML = `
             <div class="status-dot ${isLow ? 'dot-low' : 'dot-ok'}"></div>
@@ -446,7 +447,20 @@ window.openPopupModal = function(id) {
 
 window.closePopupModal = function(id) {
     const modal = document.getElementById(id);
-    if (modal) modal.style.display = 'none';
+    if (!modal || modal.style.display === 'none') return;
+
+    const modalBox = modal.querySelector('.modal-box');
+
+    // Add closing animation classes
+    modal.classList.add('closing');
+    if (modalBox) modalBox.classList.add('closing');
+
+    // Wait for animation then hide
+    setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('closing');
+        if (modalBox) modalBox.classList.remove('closing');
+    }, 300);
 };
 
 window.closePopupModalOnBackground = function(e, id) {
@@ -470,7 +484,17 @@ window.openAddModal = function() {
 
 window.closeModal = function() {
     const modal = document.getElementById('productModal');
-    if (modal) modal.style.display = 'none';
+    if (!modal || modal.style.display === 'none') return;
+
+    const modalBox = modal.querySelector('.modal-box');
+    modal.classList.add('closing');
+    if (modalBox) modalBox.classList.add('closing');
+
+    setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('closing');
+        if (modalBox) modalBox.classList.remove('closing');
+    }, 300);
 };
 
 window.openFocusModal = function(product) {
