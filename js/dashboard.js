@@ -34,64 +34,105 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==================== NOTIFICATIONS ====================
+let notifPermissionDismissed = false;
+
 function requestNotificationPermission() {
     if (!('Notification' in window)) {
         console.log('This browser does not support notifications');
         return;
     }
 
+    // Already granted - all good
     if (Notification.permission === 'granted') {
         console.log('Notification permission already granted');
         return;
     }
 
-    if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                console.log('Notification permission granted');
-                showToast('🔔 Notifications enabled for low stock alerts', 'success');
-            } else {
-                console.log('Notification permission denied');
-            }
-        });
+    // Already denied - don't ask again unless user clicks settings
+    if (Notification.permission === 'denied') {
+        console.log('Notification permission denied previously');
+        return;
+    }
+
+    // Default - show our cute modal instead of browser prompt
+    showNotifPermissionModal();
+}
+
+function showNotifPermissionModal() {
+    // Check if user dismissed it before (using localStorage)
+    if (localStorage.getItem('notifModalDismissed') === 'true') {
+        return;
+    }
+
+    const modal = document.getElementById('notifPermissionModal');
+    if (modal) {
+        modal.style.display = 'flex';
     }
 }
 
+window.enableNotifPermission = function() {
+    const modal = document.getElementById('notifPermissionModal');
+    if (modal) modal.style.display = 'none';
+
+    Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+            console.log('Notification permission granted');
+            showToast('🔔 Notifications enabled! You'll get alerts when stock is low.', 'success');
+            // Send a test notification
+            setTimeout(() => {
+                new Notification('✅ Stock Space', {
+                    body: 'Notifications are working! You'll be alerted when stock runs low.',
+                    icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png'
+                });
+            }, 1000);
+        } else {
+            console.log('Notification permission denied');
+            showToast('Notifications disabled. You can enable them in browser settings.', 'warning');
+        }
+    });
+};
+
+window.dismissNotifPermission = function() {
+    const modal = document.getElementById('notifPermissionModal');
+    if (modal) modal.style.display = 'none';
+
+    localStorage.setItem('notifModalDismissed', 'true');
+    console.log('Notification modal dismissed');
+};
+
 function showStockNotification(productName, quantity, alertLimit) {
-    if (!('Notification' in window) || Notification.permission !== 'granted') {
+    if (!('Notification' in window)) {
+        console.log('Notifications not supported');
+        return;
+    }
+
+    if (Notification.permission !== 'granted') {
+        console.log('Notification permission not granted');
         return;
     }
 
     const title = '⚠️ Stock Space Alert';
-    const body = `${productName} is low on stock!
-Only ${quantity} left (limit: ${alertLimit})`;
+    const body = `${productName} is low on stock! Only ${quantity} left (limit: ${alertLimit})`;
 
-    // Try to use service worker for better notifications
-    if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
-        navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification(title, {
-                body: body,
-                icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-                badge: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-                tag: `stock-alert-${productName}`,
-                requireInteraction: true,
-                actions: [
-                    { action: 'view', title: 'View Dashboard' },
-                    { action: 'dismiss', title: 'Dismiss' }
-                ],
-                data: {
-                    url: './dashboard.html'
-                }
-            });
-        });
-    } else {
-        // Fallback to regular notification
-        new Notification(title, {
+    // Use simple Notification API (most reliable)
+    try {
+        const notification = new Notification(title, {
             body: body,
             icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+            badge: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
             tag: `stock-alert-${productName}`,
-            requireInteraction: true
+            requireInteraction: true,
+            renotify: true
         });
+
+        notification.onclick = function() {
+            window.focus();
+            notification.close();
+        };
+
+        console.log('Notification sent for:', productName);
+    } catch (err) {
+        console.error('Notification error:', err);
     }
 }
 
