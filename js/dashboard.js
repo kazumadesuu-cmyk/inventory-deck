@@ -232,7 +232,7 @@ async function sellOne(productId) {
         
         console.log('Selling 1x', product.name, 'at price', product.price);
         await updateStock(productId, product.quantity - 1, (product.items_sold || 0) + 1, 'SELL', 1);
-        showToast(`💰 Sold 1x ${product.name}`, 'success', 4000);
+        showActionToast(`Sold x1 ${product.name}`, 'sell');
     } catch (error) {
         console.error('sellOne error:', error);
         showToast('Failed to record sale: ' + error.message, 'error');
@@ -245,7 +245,7 @@ async function restockOne(productId) {
         if (!product) return;
         
         await updateStock(productId, product.quantity + 1, product.items_sold || 0, 'RESTOCK', 1);
-        showToast(`Restocked 1x ${product.name}`);
+        showActionToast(`Restocked x1 ${product.name}`, 'restock');
     } catch (error) {
         console.error('restockOne error:', error);
         showToast('Failed to record restock: ' + error.message, 'error');
@@ -581,29 +581,6 @@ window.updateLivePrice = function() {
     document.getElementById('bulkTotalDisplay').style.color = isSell ? '#22c55e' : '#0284c7';
 };
 
-// ==================== SOLD INDICATOR POP-OUT ====================
-window.showSoldIndicator = function(productName, amount) {
-    let indicator = document.getElementById('soldPopIndicator');
-    if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.id = 'soldPopIndicator';
-        indicator.className = 'sold-pop-indicator';
-        document.body.appendChild(indicator);
-    }
-    indicator.textContent = `💰 +₱${amount.toFixed(2)}`;
-    indicator.classList.remove('fading');
-    indicator.style.display = 'block';
-    indicator.style.opacity = '1';
-    indicator.style.transform = 'translate(-50%, -50%) scale(1)';
-    indicator.style.animation = 'none';
-    indicator.offsetHeight;
-    indicator.style.animation = 'soldPopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
-    setTimeout(() => {
-        indicator.classList.add('fading');
-        setTimeout(() => { indicator.style.display = 'none'; }, 500);
-    }, 1500);
-};
-
 window.handleBundleAction = async function() {
     const qty = parseInt(document.getElementById('focus_quantity_input').value) || 1;
     if (!currentFocusProduct) return;
@@ -617,13 +594,12 @@ window.handleBundleAction = async function() {
             return;
         }
         await updateStock(product.id, product.quantity - qty, (product.items_sold || 0) + qty, 'SELL', qty);
-        showSoldIndicator(product.name, product.price * qty);
         addInstantActivity(product.name, 'SELL', qty, (product.price || 0) * qty);
         showToast(`Sold ${qty}x ${product.name}`);
     } else {
         await updateStock(product.id, product.quantity + qty, product.items_sold || 0, 'RESTOCK', qty);
         addInstantActivity(product.name, 'RESTOCK', qty, 0);
-        showToast(`Restocked ${qty}x ${product.name}`);
+        showActionToast(`Restocked x${qty} ${product.name}`, 'restock');
     }
     closePopupModal('focusModal');
 };
@@ -707,6 +683,68 @@ window.openCategoryModeModal = function() {
 };
 
 // ==================== TOAST & ALERTS ====================
+
+// ==================== ACTION TOAST NOTIFICATION (Top Right) ====================
+window.showActionToast = function(message, type = 'sell') {
+    let container = document.getElementById('actionToastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'actionToastContainer';
+        container.style.cssText = `
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        `;
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const bgColor = type === 'sell' ? '#22c55e' : '#0284c7';
+    const icon = type === 'sell' ? '💰' : '📦';
+
+    toast.style.cssText = `
+        background: ${bgColor};
+        color: white;
+        padding: 14px 22px;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 14px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        opacity: 0;
+        transform: translateX(50px);
+        transition: opacity 2s ease, transform 2s ease;
+        pointer-events: auto;
+        min-width: 220px;
+        text-align: center;
+    `;
+    toast.innerHTML = `${icon} ${message}`;
+
+    container.appendChild(toast);
+
+    // Force reflow
+    toast.offsetHeight;
+
+    // Fade in (2 seconds)
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    });
+
+    // Stay for 5 seconds, then fade out (2 seconds)
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(50px)';
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 2000);
+    }, 5000);
+};
+
 window.showToast = function(message, type = 'success') {
     let container = document.querySelector('.toast-container');
     if (!container) {
@@ -741,27 +779,24 @@ function renderFloatingAlert(lowItems) {
         document.body.appendChild(alert);
     }
 
-    // Clear any existing timer
     if (floatingAlertTimer) {
         clearTimeout(floatingAlertTimer);
         floatingAlertTimer = null;
     }
 
-    // Remove closing class if it was fading out
     alert.classList.remove('floating-alert-closing');
     alert.style.display = 'block';
     alert.style.opacity = '1';
     alert.style.transform = 'translateY(0)';
 
+    // Whole card is clickable to open alerts panel
     alert.innerHTML = `
-        <div class="floating-alert-content" onclick="window.openAlertsPanel()" style="cursor: pointer;">
+        <div class="floating-alert-content" onclick="window.openAlertsPanel()">
             <span class="floating-alert-icon">⚠️</span>
             <span class="floating-alert-text">${lowItems.length} item(s) low on stock</span>
+            <span class="floating-alert-hint">Click to view →</span>
         </div>
-        <button class="floating-alert-close" onclick="event.stopPropagation(); window.dismissFloatingAlert()">&times;</button>
     `;
-
-    // NO auto-dismiss — stays until stock is restored or user clicks X
 }
 
 window.dismissFloatingAlert = function() {
