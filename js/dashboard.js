@@ -62,20 +62,8 @@ function initializeDashboard() {
     // Logout button with confirmation
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            const confirmed = confirm('Are you sure you want to log out?');
-            if (!confirmed) return;
-            
-            try {
-                if (unsubscribeProducts) unsubscribeProducts();
-                if (unsubscribeSales) unsubscribeSales();
-                if (unsubscribeActivity) unsubscribeActivity();
-                if (unsubscribeAlerts) unsubscribeAlerts();
-                await logoutUser();
-            } catch (err) {
-                console.error('Logout error:', err);
-                window.location.href = 'index.html';
-            }
+        logoutBtn.addEventListener('click', () => {
+            openPopupModal('logoutConfirmModal');
         });
     }
     
@@ -595,7 +583,7 @@ window.handleBundleAction = async function() {
         }
         await updateStock(product.id, product.quantity - qty, (product.items_sold || 0) + qty, 'SELL', qty);
         addInstantActivity(product.name, 'SELL', qty, (product.price || 0) * qty);
-        showToast(`Sold ${qty}x ${product.name}`);
+        showActionToast(`Sold x${qty} ${product.name}`, 'sell');
     } else {
         await updateStock(product.id, product.quantity + qty, product.items_sold || 0, 'RESTOCK', qty);
         addInstantActivity(product.name, 'RESTOCK', qty, 0);
@@ -683,8 +671,20 @@ window.openCategoryModeModal = function() {
 };
 
 // ==================== TOAST & ALERTS ====================
+window.confirmLogout = async function() {
+    closePopupModal('logoutConfirmModal');
+    try {
+        if (unsubscribeProducts) unsubscribeProducts();
+        if (unsubscribeSales) unsubscribeSales();
+        if (unsubscribeActivity) unsubscribeActivity();
+        if (unsubscribeAlerts) unsubscribeAlerts();
+        await logoutUser();
+    } catch (err) {
+        console.error('Logout error:', err);
+        window.location.href = 'index.html';
+    }
+};
 
-// ==================== ACTION TOAST NOTIFICATION (Top Right) ====================
 window.showActionToast = function(message, type = 'sell') {
     let container = document.getElementById('actionToastContainer');
     if (!container) {
@@ -725,17 +725,13 @@ window.showActionToast = function(message, type = 'sell') {
     toast.innerHTML = `${icon} ${message}`;
 
     container.appendChild(toast);
-
-    // Force reflow
     toast.offsetHeight;
 
-    // Fade in (2 seconds)
     requestAnimationFrame(() => {
         toast.style.opacity = '1';
         toast.style.transform = 'translateX(0)';
     });
 
-    // Stay for 5 seconds, then fade out (2 seconds)
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(50px)';
@@ -743,20 +739,6 @@ window.showActionToast = function(message, type = 'sell') {
             if (toast.parentNode) toast.remove();
         }, 2000);
     }, 5000);
-};
-
-window.confirmLogout = async function() {
-    closePopupModal('logoutConfirmModal');
-    try {
-        if (unsubscribeProducts) unsubscribeProducts();
-        if (unsubscribeSales) unsubscribeSales();
-        if (unsubscribeActivity) unsubscribeActivity();
-        if (unsubscribeAlerts) unsubscribeAlerts();
-        await logoutUser();
-    } catch (err) {
-        console.error('Logout error:', err);
-        window.location.href = 'index.html';
-    }
 };
 
 window.showToast = function(message, type = 'success') {
@@ -793,24 +775,27 @@ function renderFloatingAlert(lowItems) {
         document.body.appendChild(alert);
     }
 
+    // Clear any existing timer
     if (floatingAlertTimer) {
         clearTimeout(floatingAlertTimer);
         floatingAlertTimer = null;
     }
 
+    // Remove closing class if it was fading out
     alert.classList.remove('floating-alert-closing');
     alert.style.display = 'block';
     alert.style.opacity = '1';
     alert.style.transform = 'translateY(0)';
 
-    // Whole card is clickable to open alerts panel
     alert.innerHTML = `
-        <div class="floating-alert-content" onclick="window.openAlertsPanel()">
+        <div class="floating-alert-content" onclick="window.openAlertsPanel()" style="cursor: pointer;">
             <span class="floating-alert-icon">⚠️</span>
             <span class="floating-alert-text">${lowItems.length} item(s) low on stock</span>
-            <span class="floating-alert-hint">Click to view →</span>
         </div>
+        <button class="floating-alert-close" onclick="event.stopPropagation(); window.dismissFloatingAlert()">&times;</button>
     `;
+
+    // NO auto-dismiss — stays until stock is restored or user clicks X
 }
 
 window.dismissFloatingAlert = function() {
