@@ -11,12 +11,23 @@ const ALERTS_COLLECTION = 'stock_alerts';
 
 // Add product
 export async function addProduct(productData) {
+    const userId = window.currentUser?.uid;
+    if (!userId) throw new Error('User not authenticated');
+    
     const docRef = await addDoc(collection(db, PRODUCTS_COLLECTION), {
         ...productData,
-        user_id: window.currentUser.uid,
+        user_id: userId,
         created_at: serverTimestamp()
     });
-    await logActivity(productData.name, 'ADD', productData.quantity, 0);
+    
+    // Log activity after successful product creation
+    try {
+        await logActivity(productData.name, 'ADD', productData.quantity, 0);
+    } catch (err) {
+        console.error('Failed to log ADD activity:', err);
+        // Don't throw - product was created successfully
+    }
+    
     return docRef.id;
 }
 
@@ -68,9 +79,14 @@ export async function updateStock(productId, newQuantity, newItemsSold, action, 
                 sold_at: serverTimestamp()
             };
             console.log('Creating sales record:', saleData);
-            await addDoc(collection(db, SALES_COLLECTION), saleData);
+            try {
+                await addDoc(collection(db, SALES_COLLECTION), saleData);
+                console.log('Sale recorded successfully');
+            } catch (err) {
+                console.error('Failed to create sales record:', err);
+                // Continue to log activity even if sales record fails
+            }
             await logActivity(product.name, action, deltaQty, revenue);
-            console.log('Sale recorded successfully');
         } else {
             await logActivity(product.name, action, deltaQty, 0);
         }
@@ -88,12 +104,18 @@ export async function deleteProduct(productId) {
 // Log activity
 async function logActivity(productName, action, quantity, revenue = 0) {
     try {
+        const userId = window.currentUser?.uid;
+        if (!userId) {
+            console.warn('Cannot log activity: no authenticated user');
+            return;
+        }
+        
         const activityData = {
-            user_id: window.currentUser.uid,
-            product_name: productName,
+            user_id: userId,
+            product_name: productName || 'Unknown Product',
             action_type: action,
-            quantity: quantity,
-            revenue: revenue,
+            quantity: quantity || 0,
+            revenue: revenue || 0,
             created_at: serverTimestamp()
         };
         console.log('Logging activity:', activityData);
@@ -139,22 +161,22 @@ export function subscribeToActivity(callback) {
             callback(logs);
         }, (error) => {
             console.error('Activity listener error:', error);
-            // Fallback without orderBy
-            const fallbackQ = query(
-                collection(db, ACTIVITY_COLLECTION),
-                where("user_id", "==", window.currentUser.uid),
-                limit(50)
-            );
-            return onSnapshot(fallbackQ, (snapshot) => {
-                const logs = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                callback(logs);
-            });
         });
     } catch (error) {
         console.error('subscribeToActivity error:', error);
+        // Fallback without orderBy if query construction fails
+        const fallbackQ = query(
+            collection(db, ACTIVITY_COLLECTION),
+            where("user_id", "==", window.currentUser.uid),
+            limit(50)
+        );
+        return onSnapshot(fallbackQ, (snapshot) => {
+            const logs = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            callback(logs);
+        });
     }
 }
 
@@ -183,22 +205,22 @@ export function subscribeToSales(callback) {
                 console.error('Collection: sales_history');
                 console.error('Fields: user_id (Ascending), sold_at (Descending)');
             }
-            // Fallback without orderBy
-            const fallbackQ = query(
-                collection(db, SALES_COLLECTION),
-                where("user_id", "==", window.currentUser.uid),
-                limit(100)
-            );
-            return onSnapshot(fallbackQ, (snapshot) => {
-                const sales = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                callback(sales);
-            });
         });
     } catch (error) {
         console.error('subscribeToSales error:', error);
+        // Fallback without orderBy if query construction fails
+        const fallbackQ = query(
+            collection(db, SALES_COLLECTION),
+            where("user_id", "==", window.currentUser.uid),
+            limit(100)
+        );
+        return onSnapshot(fallbackQ, (snapshot) => {
+            const sales = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            callback(sales);
+        });
     }
 }
 
@@ -225,21 +247,21 @@ export function subscribeToStockAlerts(callback) {
                 console.error('Collection: stock_alerts');
                 console.error('Fields: user_id (Ascending), created_at (Descending)');
             }
-            // Fallback without orderBy
-            const fallbackQ = query(
-                collection(db, ALERTS_COLLECTION),
-                where("user_id", "==", window.currentUser.uid),
-                limit(100)
-            );
-            return onSnapshot(fallbackQ, (snapshot) => {
-                const alerts = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                callback(alerts);
-            });
         });
     } catch (error) {
         console.error('subscribeToStockAlerts error:', error);
+        // Fallback without orderBy if query construction fails
+        const fallbackQ = query(
+            collection(db, ALERTS_COLLECTION),
+            where("user_id", "==", window.currentUser.uid),
+            limit(100)
+        );
+        return onSnapshot(fallbackQ, (snapshot) => {
+            const alerts = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            callback(alerts);
+        });
     }
 }

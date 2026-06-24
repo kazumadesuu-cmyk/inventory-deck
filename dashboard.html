@@ -33,6 +33,18 @@
             <button id="logoutBtn" class="logout-btn">Logout</button>
         </div>
     </div>
+    <!-- Low Stock Warning Banner -->
+    <div id="lowStockBanner" class="low-stock-banner" style="display: none;" onclick="openAlertsPanel()">
+        <div class="low-stock-banner-content">
+            <span class="low-stock-banner-icon">⚠️</span>
+            <div class="low-stock-banner-text">
+                <strong id="lowStockBannerCount">0 items</strong> running low on stock
+            </div>
+            <span class="low-stock-banner-action">View Details →</span>
+        </div>
+        <div class="low-stock-banner-pulse"></div>
+    </div>
+
     <div class="summary-container">
         <div class="metric-card clickable-card" onclick="openPopupModal('productsPopup')">
             <h4>Total Products</h4><p id="totalProductsCount">0</p>
