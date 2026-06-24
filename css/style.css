@@ -1740,6 +1740,12 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     animation: slideInRight 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), 
                 transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: pointer;
+}
+
+.floating-alert:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 16px 50px rgba(239, 68, 68, 0.3);
 }
 
 .floating-alert-closing {
@@ -1770,29 +1776,6 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     color: #991b1b;
     font-size: 14px;
     flex: 1;
-}
-
-.floating-alert-close {
-    background: #fff1f2;
-    border: none;
-    color: #ef4444;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    margin-left: 8px;
-}
-
-.floating-alert-close:hover {
-    background: #ef4444;
-    color: white;
-    transform: scale(1.1);
 }
 
 /* ---------- SOLD INDICATOR POP-OUT ---------- */
