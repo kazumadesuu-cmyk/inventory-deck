@@ -2078,3 +2078,156 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 #notifPermissionModal .modal-box:hover {
     transform: scale(1.02);
 }
+
+/* ==================== CUTE CUSTOM MODALS ==================== */
+
+.cute-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(12px);
+    z-index: 999999;
+    animation: modalBackdropIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cute-modal-overlay.active {
+    display: flex;
+}
+
+.cute-modal-box {
+    background: white;
+    border-radius: 32px;
+    padding: 48px 40px;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+    animation: cuteModalPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.cute-modal-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #f48fb1, #f06292, #f48fb1);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+.cute-modal-emoji {
+    font-size: 64px;
+    margin-bottom: 20px;
+    display: block;
+    animation: cuteBounce 2s infinite;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+
+.cute-modal-title {
+    margin: 0 0 12px;
+    color: #1e293b;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: 'Comfortaa', cursive;
+}
+
+.cute-modal-text {
+    color: #64748b;
+    margin-bottom: 32px;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.cute-modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.cute-btn {
+    padding: 14px 32px;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: 'Comfortaa', cursive;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.cute-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+}
+
+.cute-btn:hover::after {
+    width: 200px;
+    height: 200px;
+}
+
+.cute-btn-no {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.cute-btn-no:hover {
+    background: #e2e8f0;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.cute-btn-yes {
+    background: linear-gradient(135deg, #f48fb1 0%, #f06292 100%);
+    color: white;
+    box-shadow: 0 6px 20px rgba(244, 143, 177, 0.35);
+}
+
+.cute-btn-yes:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(244, 143, 177, 0.45);
+}
+
+.cute-btn-delete {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+}
+
+.cute-btn-delete:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.45);
+}
+
+@keyframes cuteModalPop {
+    0% { opacity: 0; transform: scale(0.7) translateY(30px); }
+    60% { opacity: 1; transform: scale(1.05) translateY(-5px); }
+    80% { transform: scale(0.98) translateY(2px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes cuteBounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-8px) rotate(-5deg); }
+    50% { transform: translateY(0) rotate(0deg); }
+    75% { transform: translateY(-4px) rotate(5deg); }
+}

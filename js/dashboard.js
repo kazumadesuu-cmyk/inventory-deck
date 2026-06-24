@@ -82,7 +82,7 @@ function initializeDashboard() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            openPopupModal('logoutConfirmModal');
+            openCuteModal('logoutConfirmModal');
         });
     
     // Modal form handler
@@ -663,14 +663,14 @@ window.deleteProductItem = async function(id) {
     if (!product) return;
 
     window.productToDelete = product;
-    openPopupModal('deleteConfirmModal');
+    openCuteModal('deleteConfirmModal');
 };
 
 window.confirmDeleteProduct = async function() {
     const product = window.productToDelete;
     if (!product) return;
 
-    closePopupModal('deleteConfirmModal');
+    closeCuteModal('deleteConfirmModal');
     try {
         await deleteProduct(product.id);
         showToast(`Deleted ${product.name}`);
@@ -868,3 +868,15 @@ function removeFloatingAlert() {
         alert.classList.remove('floating-alert-closing');
     }, 500);
 }
+
+// ==================== CUTE MODAL HELPERS ====================
+
+window.openCuteModal = function(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add('active');
+};
+
+window.closeCuteModal = function(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.remove('active');
+};
