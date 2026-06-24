@@ -71,6 +71,7 @@ function initializeDashboard() {
     
     // Activity listener
     unsubscribeActivity = subscribeToActivity((logs) => {
+        window.allActivityLogs = logs;  // Store for filtering
         updateActivityPopup(logs);
     });
     
