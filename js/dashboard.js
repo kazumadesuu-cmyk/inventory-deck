@@ -449,6 +449,24 @@ window.closeAlertsPanel = function() {
     if (panel) panel.classList.remove('alerts-panel-open');
 };
 
+// Close alerts panel when clicking outside
+document.addEventListener('click', function(e) {
+    const panel = document.getElementById('alertsPanel');
+    if (!panel) return;
+
+    // Check if panel is open
+    if (!panel.classList.contains('alerts-panel-open')) return;
+
+    // Check if click is inside panel or on sidebar
+    const sidebar = document.querySelector('.sidebar-nav');
+    const isInsidePanel = panel.contains(e.target);
+    const isOnSidebar = sidebar && sidebar.contains(e.target);
+
+    if (!isInsidePanel && !isOnSidebar) {
+        closeAlertsPanel();
+    }
+});
+
 function updateAlertsPanel() {
     const content = document.getElementById('alertsPanelContent');
     if (!content) return;
