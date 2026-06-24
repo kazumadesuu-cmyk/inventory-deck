@@ -181,6 +181,7 @@ function renderProductCards(productList) {
         const card = document.createElement('div');
         card.className = `product-card cat-${getCategoryClass(product.category)}`;
         card.style.animationDelay = `${index * 0.1}s`;
+
         card.id = `card-product-${product.id}`;
         card.innerHTML = `
             <div class="status-dot ${isLow ? 'dot-low' : 'dot-ok'}"></div>
@@ -226,43 +227,11 @@ async function sellOne(productId) {
         
         console.log('Selling 1x', product.name, 'at price', product.price);
         await updateStock(productId, product.quantity - 1, (product.items_sold || 0) + 1, 'SELL', 1);
-        
-        // Show sold pop indicator
-        showSoldIndicator(product.name, product.price);
-        
-        showToast(`Sold 1x ${product.name}`);
+        showToast(`💰 Sold 1x ${product.name}`, 'success', 4000);
     } catch (error) {
         console.error('sellOne error:', error);
         showToast('Failed to record sale: ' + error.message, 'error');
     }
-}
-
-function showSoldIndicator(productName, price) {
-    // Remove existing indicator if any
-    const existing = document.getElementById('soldPopIndicator');
-    if (existing) existing.remove();
-    
-    const indicator = document.createElement('div');
-    indicator.id = 'soldPopIndicator';
-    indicator.className = 'sold-pop-indicator';
-    indicator.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 32px;">💰</span>
-            <div>
-                <div style="font-size: 14px; opacity: 0.9; font-weight: 600;">SOLD!</div>
-                <div style="font-size: 18px;">₱${price ? price.toFixed(2) : '0.00'}</div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(indicator);
-    
-    // Fade out after 5 seconds
-    setTimeout(() => {
-        indicator.classList.add('fading');
-        setTimeout(() => {
-            if (indicator.parentElement) indicator.remove();
-        }, 500);
-    }, 5000);
 }
 
 async function restockOne(productId) {
@@ -282,21 +251,14 @@ async function restockOne(productId) {
 window.sellOne = sellOne;
 window.restockOne = restockOne;
 
-let lowStockModalShownThisSession = false;
-
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
-    const banner = document.getElementById('lowStockBanner');
-    const bannerCount = document.getElementById('lowStockBannerCount');
     
     if (lowItems.length > 0) {
-        let newAlerts = false;
-        
         lowItems.forEach(item => {
             if (!alertedProductIds.has(item.id)) {
                 alertedProductIds.add(item.id);
                 logStockAlert(item.id, item.name, item.quantity, item.alert_limit);
-                newAlerts = true;
             }
             const existing = lowStockHistory.find(h => h.id === item.id);
             if (!existing) {
@@ -313,46 +275,18 @@ function checkLowStock(productList) {
             }
         });
         
-        // Update and show the homepage banner
-        if (banner && bannerCount) {
-            bannerCount.textContent = `${lowItems.length} item${lowItems.length > 1 ? 's' : ''}`;
-            
-            // Only animate if it was hidden
-            if (banner.style.display === 'none') {
-                banner.classList.remove('closing');
-                banner.style.display = 'block';
-            }
-        }
-        
         renderFloatingAlert(lowItems);
         updateAlertsPanel();
+        showLowStockModal(lowItems);
         
-        // Only show warning modal once per session, or when NEW items go low
-        if (!lowStockModalShownThisSession || newAlerts) {
-            showLowStockModal(lowItems);
-            lowStockModalShownThisSession = true;
-        }
-        
-        // Only show browser notification for new alerts
-        if (newAlerts && Notification.permission === 'granted') {
+        if (Notification.permission === 'granted') {
             new Notification('Stock Alert', {
-                body: `${lowItems.length} item(s) are low on stock`
+                body: `${lowItems.length} items are low on stock`
             });
         }
     } else {
         lowStockHistory = [];
         alertedProductIds.clear();
-        lowStockModalShownThisSession = false;
-        
-        // Hide banner smoothly
-        if (banner && banner.style.display !== 'none') {
-            banner.classList.add('closing');
-            setTimeout(() => {
-                banner.style.display = 'none';
-                banner.classList.remove('closing');
-            }, 400);
-        }
-        
         removeFloatingAlert();
         updateAlertsPanel();
     }
@@ -474,39 +408,6 @@ function updateAlertsPopup(alerts) {
     `}).join('');
 }
 
-// ==================== CATEGORY MODAL ====================
-window.openCategoryModeModal = function() {
-    const container = document.getElementById('categoryModeContainer');
-    if (!container) return;
-    
-    if (products.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-title">No Products Yet</div><p class="empty-state-desc">Add some products to see them organized by category.</p></div>';
-    } else {
-        const grouped = products.reduce((acc, p) => {
-            const cat = p.category || 'Uncategorized';
-            if (!acc[cat]) acc[cat] = [];
-            acc[cat].push(p);
-            return acc;
-        }, {});
-        
-        container.innerHTML = Object.entries(grouped).map(([cat, items]) => `
-            <div class="category-group" style="margin-bottom: 20px;">
-                <div style="font-size: 16px; font-weight: 700; color: #0284c7; margin-bottom: 10px; padding: 8px 16px; background: #e0f2fe; border-radius: 12px;">${escapeHtml(cat)} (${items.length})</div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
-                    ${items.map(item => `
-                        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                            <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${escapeHtml(item.name)}</div>
-                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Stock: ${item.quantity} | ₱${item.price ? item.price.toFixed(2) : '0.00'}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    openPopupModal('categoryModePopup');
-};
-
 // ==================== ALERTS PANEL ====================
 window.openAlertsPanel = function() {
     const panel = document.getElementById('alertsPanel');
@@ -547,13 +448,13 @@ window.openPopupModal = function(id) {
 window.closePopupModal = function(id) {
     const modal = document.getElementById(id);
     if (!modal || modal.style.display === 'none') return;
-    
+
     const modalBox = modal.querySelector('.modal-box');
-    
+
     // Add closing animation classes
     modal.classList.add('closing');
     if (modalBox) modalBox.classList.add('closing');
-    
+
     // Wait for animation then hide
     setTimeout(() => {
         modal.style.display = 'none';
@@ -584,11 +485,11 @@ window.openAddModal = function() {
 window.closeModal = function() {
     const modal = document.getElementById('productModal');
     if (!modal || modal.style.display === 'none') return;
-    
+
     const modalBox = modal.querySelector('.modal-box');
     modal.classList.add('closing');
     if (modalBox) modalBox.classList.add('closing');
-    
+
     setTimeout(() => {
         modal.style.display = 'none';
         modal.classList.remove('closing');
@@ -705,8 +606,41 @@ window.deleteProductItem = async function(id) {
     }
 };
 
+// ==================== CATEGORY MODAL ====================
+window.openCategoryModeModal = function() {
+    const container = document.getElementById('categoryModeContainer');
+    if (!container) return;
+
+    if (products.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-title">No Products Yet</div><p class="empty-state-desc">Add some products to see them organized by category.</p></div>';
+    } else {
+        const grouped = products.reduce((acc, p) => {
+            const cat = p.category || 'Uncategorized';
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(p);
+            return acc;
+        }, {});
+
+        container.innerHTML = Object.entries(grouped).map(([cat, items]) => `
+            <div class="category-group" style="margin-bottom: 20px;">
+                <div style="font-size: 16px; font-weight: 700; color: #0284c7; margin-bottom: 10px; padding: 8px 16px; background: #e0f2fe; border-radius: 12px;">${escapeHtml(cat)} (${items.length})</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                    ${items.map(item => `
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${escapeHtml(item.name)}</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Stock: ${item.quantity} | ₱${item.price ? item.price.toFixed(2) : '0.00'}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    openPopupModal('categoryModePopup');
+};
+
 // ==================== TOAST & ALERTS ====================
-window.showToast = function(message, type = 'success', duration = 5000) {
+window.showToast = function(message, type = 'success') {
     let container = document.querySelector('.toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -718,40 +652,14 @@ window.showToast = function(message, type = 'success', duration = 5000) {
     toast.className = `toast ${type} animate-slide-in`;
     toast.innerHTML = `
         <span class="toast-message">${escapeHtml(message)}</span>
-        <button class="toast-close" onclick="window.dismissToast(this.parentElement)">&times;</button>
+        <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
     `;
     container.appendChild(toast);
     
-    // Auto-dismiss with smooth animation
-    const dismissTimer = setTimeout(() => {
-        window.dismissToast(toast);
-    }, duration);
-    
-    // Store timer on element so manual close can clear it
-    toast._dismissTimer = dismissTimer;
-};
-
-window.dismissToast = function(toast) {
-    if (!toast || toast._isDismissing) return;
-    toast._isDismissing = true;
-    
-    // Clear auto-dismiss timer if exists
-    if (toast._dismissTimer) {
-        clearTimeout(toast._dismissTimer);
-    }
-    
-    // Add exit animation class
-    toast.classList.remove('animate-slide-in');
-    toast.style.animation = 'none';
-    toast.offsetHeight; // Force reflow
-    toast.classList.add('animate-fade-out');
-    
-    // Remove after animation completes
     setTimeout(() => {
-        if (toast.parentElement) {
-            toast.remove();
-        }
-    }, 500);
+        toast.classList.add('animate-fade-out');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
 };
 
 // ==================== FLOATING ALERT ====================
@@ -765,19 +673,19 @@ function renderFloatingAlert(lowItems) {
         alert.className = 'floating-alert';
         document.body.appendChild(alert);
     }
-    
+
     // Clear existing timer if any
     if (floatingAlertTimer) {
         clearTimeout(floatingAlertTimer);
         floatingAlertTimer = null;
     }
-    
+
     // Remove closing class if it was fading out
     alert.classList.remove('floating-alert-closing');
     alert.style.display = 'block';
     alert.style.opacity = '1';
     alert.style.transform = 'translateY(0)';
-    
+
     alert.innerHTML = `
         <div class="floating-alert-content">
             <span class="floating-alert-icon">⚠️</span>
@@ -785,7 +693,7 @@ function renderFloatingAlert(lowItems) {
             <button class="floating-alert-close" onclick="window.dismissFloatingAlert()">&times;</button>
         </div>
     `;
-    
+
     // Auto-dismiss after 5 seconds
     floatingAlertTimer = setTimeout(() => {
         window.dismissFloatingAlert();
@@ -795,16 +703,16 @@ function renderFloatingAlert(lowItems) {
 window.dismissFloatingAlert = function() {
     const alert = document.getElementById('floatingStockAlert');
     if (!alert || alert.style.display === 'none') return;
-    
+
     // Clear auto-dismiss timer
     if (floatingAlertTimer) {
         clearTimeout(floatingAlertTimer);
         floatingAlertTimer = null;
     }
-    
+
     // Add smooth exit animation
     alert.classList.add('floating-alert-closing');
-    
+
     setTimeout(() => {
         alert.style.display = 'none';
         alert.classList.remove('floating-alert-closing');
