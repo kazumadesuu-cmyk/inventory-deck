@@ -223,33 +223,5 @@
     </div>
 </div>
 
-
-<!-- Service Worker Registration for Notifications -->
-<script>
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-        .then(registration => {
-            console.log('Service Worker registered:', registration.scope);
-        })
-        .catch(error => {
-            console.log('Service Worker registration failed:', error);
-        });
-}
-</script>
-
-
-<!-- Notification Permission Modal -->
-<div class="modal-overlay" id="notifPermissionModal" style="z-index: 9999999;">
-    <div class="modal-box" style="text-align: center; max-width: 420px; padding: 40px;">
-        <div style="font-size: 56px; margin-bottom: 16px;">🔔</div>
-        <h3 style="margin: 0 0 12px; color: #0f172a; font-size: 22px;">Stay in the Loop!</h3>
-        <p style="color: #64748b; margin-bottom: 28px; font-size: 15px; line-height: 1.6;">Get instant alerts when your stock runs low — never miss a restock moment! Works on both laptop and phone.</p>
-        <div style="display: flex; gap: 12px; justify-content: center;">
-            <button type="button" class="modal-close-btn" style="margin: 0; width: auto; padding: 12px 24px;" onclick="dismissNotifPermission()">Not Now</button>
-            <button type="button" class="add-product-btn" style="margin: 0; width: auto; padding: 12px 28px; background: #22c55e; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);" onclick="enableNotifPermission()">Enable Notifications ✨</button>
-        </div>
-    </div>
-</div>
-
 </body>
 </html>
