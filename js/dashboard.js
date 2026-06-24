@@ -11,6 +11,7 @@ let unsubscribeAlerts = null;
 let currentFocusProduct = null;
 let lowStockHistory = [];
 let alertedProductIds = new Set();
+let instantActivityLogs = []; // Local cache for instant UI updates
 
 // Initialize dashboard - wait for auth to be ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -136,8 +137,9 @@ async function handleFormSubmit(e) {
         showToast('Product updated successfully');
     } else {
         await addProduct(data);
+        addInstantActivity(data.name, 'ADD', data.quantity || 0, 0);
         showToast('Product added successfully');
-        
+
         // Optimistically add to activity log
         addOptimisticActivity(data.name, 'ADD', data.quantity || 0, 0);
     }
@@ -184,6 +186,7 @@ function renderProductCards(productList) {
         const card = document.createElement('div');
         card.className = `product-card cat-${getCategoryClass(product.category)}`;
         card.style.animationDelay = `${index * 0.1}s`;
+
         card.id = `card-product-${product.id}`;
         card.innerHTML = `
             <div class="status-dot ${isLow ? 'dot-low' : 'dot-ok'}"></div>
@@ -229,23 +232,11 @@ async function sellOne(productId) {
         
         console.log('Selling 1x', product.name, 'at price', product.price);
         await updateStock(productId, product.quantity - 1, (product.items_sold || 0) + 1, 'SELL', 1);
-        
-        // Show sold pop indicator
-        showSoldIndicator(product.name, product.price);
-        
-        // Optimistically add to activity log
-        addOptimisticActivity(product.name, 'SELL', 1, product.price || 0);
-        
         showToast(`💰 Sold 1x ${product.name}`, 'success', 4000);
     } catch (error) {
         console.error('sellOne error:', error);
         showToast('Failed to record sale: ' + error.message, 'error');
     }
-}
-
-function showSoldIndicator(productName, price) {
-    // Show a special green toast at bottom-right instead of center popup
-    showToast(`💰 Sold! ₱${price ? price.toFixed(2) : '0.00'}`, 'success', 5000);
 }
 
 async function restockOne(productId) {
@@ -254,11 +245,7 @@ async function restockOne(productId) {
         if (!product) return;
         
         await updateStock(productId, product.quantity + 1, product.items_sold || 0, 'RESTOCK', 1);
-        
-        // Optimistically add to activity log
-        addOptimisticActivity(product.name, 'RESTOCK', 1, 0);
-        
-        showToast(`📦 Restocked 1x ${product.name}`, 'success', 4000);
+        showToast(`Restocked 1x ${product.name}`);
     } catch (error) {
         console.error('restockOne error:', error);
         showToast('Failed to record restock: ' + error.message, 'error');
@@ -269,21 +256,14 @@ async function restockOne(productId) {
 window.sellOne = sellOne;
 window.restockOne = restockOne;
 
-let lowStockModalShownThisSession = false;
-
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
-    const banner = document.getElementById('lowStockBanner');
-    const bannerCount = document.getElementById('lowStockBannerCount');
     
     if (lowItems.length > 0) {
-        let newAlerts = false;
-        
         lowItems.forEach(item => {
             if (!alertedProductIds.has(item.id)) {
                 alertedProductIds.add(item.id);
                 logStockAlert(item.id, item.name, item.quantity, item.alert_limit);
-                newAlerts = true;
             }
             const existing = lowStockHistory.find(h => h.id === item.id);
             if (!existing) {
@@ -300,46 +280,18 @@ function checkLowStock(productList) {
             }
         });
         
-        // Update and show the homepage banner
-        if (banner && bannerCount) {
-            bannerCount.textContent = `${lowItems.length} item${lowItems.length > 1 ? 's' : ''}`;
-            
-            // Only animate if it was hidden
-            if (banner.style.display === 'none') {
-                banner.classList.remove('closing');
-                banner.style.display = 'block';
-            }
-        }
-        
         renderFloatingAlert(lowItems);
         updateAlertsPanel();
+        showLowStockModal(lowItems);
         
-        // Only show warning modal once per session, or when NEW items go low
-        if (!lowStockModalShownThisSession || newAlerts) {
-            showLowStockModal(lowItems);
-            lowStockModalShownThisSession = true;
-        }
-        
-        // Only show browser notification for new alerts
-        if (newAlerts && Notification.permission === 'granted') {
+        if (Notification.permission === 'granted') {
             new Notification('Stock Alert', {
-                body: `${lowItems.length} item(s) are low on stock`
+                body: `${lowItems.length} items are low on stock`
             });
         }
     } else {
         lowStockHistory = [];
         alertedProductIds.clear();
-        lowStockModalShownThisSession = false;
-        
-        // Hide banner smoothly
-        if (banner && banner.style.display !== 'none') {
-            banner.classList.add('closing');
-            setTimeout(() => {
-                banner.style.display = 'none';
-                banner.classList.remove('closing');
-            }, 400);
-        }
-        
         removeFloatingAlert();
         updateAlertsPanel();
     }
@@ -408,7 +360,13 @@ function updateRevenuePopup(sales) {
     }
     tbody.innerHTML = sales.map(s => {
         const date = s.sold_at ? (typeof s.sold_at.toDate === 'function' ? new Date(s.sold_at.toDate()) : new Date(s.sold_at)).toLocaleString() : 'N/A';
-        const revenue = s.revenue !== undefined ? s.revenue : ((s.price_sold || 0) * (s.quantity_sold || 0));
+        // Calculate revenue properly
+        let revenue = 0;
+        if (s.revenue !== undefined && s.revenue !== null) {
+            revenue = Number(s.revenue);
+        } else {
+            revenue = (Number(s.price_sold) || 0) * (Number(s.quantity_sold) || 0);
+        }
         return `
         <tr class="animate-fade-in">
             <td>${escapeHtml(s.product_name)}</td>
@@ -420,28 +378,33 @@ function updateRevenuePopup(sales) {
     `}).join('');
 }
 
-// Store for optimistic updates
-let pendingActivityLogs = [];
+let instantActivityLogs = [];
 
 function updateActivityPopup(logs) {
     const tbody = document.getElementById('auditLogBookTableBody');
     if (!tbody) return;
-    
-    // Combine pending (optimistic) logs with Firestore logs
-    const allLogs = [...pendingActivityLogs, ...logs];
-    
-    if (allLogs.length === 0) {
+
+    // Merge instant logs with Firestore logs, remove duplicates
+    const allLogs = [...instantActivityLogs, ...logs];
+    const seen = new Set();
+    const uniqueLogs = allLogs.filter(log => {
+        const key = `${log.product_name}-${log.action_type}-${log.quantity}-${log.created_at}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    if (uniqueLogs.length === 0) {
         tbody.innerHTML = '<tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr>';
         return;
     }
-    
-    tbody.innerHTML = allLogs.map((log, index) => {
-        const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'Just now';
+
+    tbody.innerHTML = uniqueLogs.map((log, index) => {
+        const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
         const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
         const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
-        const isPending = log._pending ? 'style="opacity: 0.7;"' : '';
         return `
-        <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s" ${isPending}>
+        <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
             <td style="font-size: 12px; color: #94a3b8;">${date}</td>
             <td>${escapeHtml(log.product_name)}</td>
             <td><span style="color: ${actionColor}; font-weight: 700;">${log.action_type}</span></td>
@@ -451,24 +414,23 @@ function updateActivityPopup(logs) {
     `}).join('');
 }
 
-// Optimistically add activity to UI immediately
-function addOptimisticActivity(productName, actionType, quantity, revenue) {
-    const optimisticLog = {
+function addInstantActivity(productName, action, quantity, revenue) {
+    const log = {
         product_name: productName,
-        action_type: actionType,
+        action_type: action,
         quantity: quantity,
         revenue: revenue,
-        created_at: new Date(),
-        _pending: true
+        created_at: new Date()
     };
-    
-    pendingActivityLogs.unshift(optimisticLog);
-    updateActivityPopup([]); // Trigger re-render with pending logs
-    
-    // Remove from pending after 3 seconds (Firestore should have caught up)
-    setTimeout(() => {
-        pendingActivityLogs = pendingActivityLogs.filter(l => l !== optimisticLog);
-    }, 3000);
+    instantActivityLogs.unshift(log);
+    // Keep only last 10 instant logs to avoid buildup
+    if (instantActivityLogs.length > 10) instantActivityLogs.pop();
+
+    // Refresh the popup if it's open
+    const tbody = document.getElementById('auditLogBookTableBody');
+    if (tbody) {
+        updateActivityPopup([]); // Will merge with instant logs
+    }
 }
 
 function updateAlertsPopup(alerts) {
@@ -489,39 +451,6 @@ function updateAlertsPopup(alerts) {
         </tr>
     `}).join('');
 }
-
-// ==================== CATEGORY MODAL ====================
-window.openCategoryModeModal = function() {
-    const container = document.getElementById('categoryModeContainer');
-    if (!container) return;
-    
-    if (products.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-title">No Products Yet</div><p class="empty-state-desc">Add some products to see them organized by category.</p></div>';
-    } else {
-        const grouped = products.reduce((acc, p) => {
-            const cat = p.category || 'Uncategorized';
-            if (!acc[cat]) acc[cat] = [];
-            acc[cat].push(p);
-            return acc;
-        }, {});
-        
-        container.innerHTML = Object.entries(grouped).map(([cat, items]) => `
-            <div class="category-group" style="margin-bottom: 20px;">
-                <div style="font-size: 16px; font-weight: 700; color: #0284c7; margin-bottom: 10px; padding: 8px 16px; background: #e0f2fe; border-radius: 12px;">${escapeHtml(cat)} (${items.length})</div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
-                    ${items.map(item => `
-                        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                            <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${escapeHtml(item.name)}</div>
-                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Stock: ${item.quantity} | ₱${item.price ? item.price.toFixed(2) : '0.00'}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    openPopupModal('categoryModePopup');
-};
 
 // ==================== ALERTS PANEL ====================
 window.openAlertsPanel = function() {
@@ -563,13 +492,13 @@ window.openPopupModal = function(id) {
 window.closePopupModal = function(id) {
     const modal = document.getElementById(id);
     if (!modal || modal.style.display === 'none') return;
-    
+
     const modalBox = modal.querySelector('.modal-box');
-    
+
     // Add closing animation classes
     modal.classList.add('closing');
     if (modalBox) modalBox.classList.add('closing');
-    
+
     // Wait for animation then hide
     setTimeout(() => {
         modal.style.display = 'none';
@@ -600,11 +529,11 @@ window.openAddModal = function() {
 window.closeModal = function() {
     const modal = document.getElementById('productModal');
     if (!modal || modal.style.display === 'none') return;
-    
+
     const modalBox = modal.querySelector('.modal-box');
     modal.classList.add('closing');
     if (modalBox) modalBox.classList.add('closing');
-    
+
     setTimeout(() => {
         modal.style.display = 'none';
         modal.classList.remove('closing');
@@ -668,17 +597,11 @@ window.handleBundleAction = async function() {
         }
         await updateStock(product.id, product.quantity - qty, (product.items_sold || 0) + qty, 'SELL', qty);
         showSoldIndicator(product.name, product.price * qty);
-        
-        // Optimistically add to activity log
-        addOptimisticActivity(product.name, 'SELL', qty, (product.price || 0) * qty);
-        
+        addInstantActivity(product.name, 'SELL', qty, (product.price || 0) * qty);
         showToast(`Sold ${qty}x ${product.name}`);
     } else {
         await updateStock(product.id, product.quantity + qty, product.items_sold || 0, 'RESTOCK', qty);
-        
-        // Optimistically add to activity log
-        addOptimisticActivity(product.name, 'RESTOCK', qty, 0);
-        
+        addInstantActivity(product.name, 'RESTOCK', qty, 0);
         showToast(`Restocked ${qty}x ${product.name}`);
     }
     closePopupModal('focusModal');
@@ -729,8 +652,41 @@ window.deleteProductItem = async function(id) {
     }
 };
 
+// ==================== CATEGORY MODAL ====================
+window.openCategoryModeModal = function() {
+    const container = document.getElementById('categoryModeContainer');
+    if (!container) return;
+
+    if (products.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-title">No Products Yet</div><p class="empty-state-desc">Add some products to see them organized by category.</p></div>';
+    } else {
+        const grouped = products.reduce((acc, p) => {
+            const cat = p.category || 'Uncategorized';
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(p);
+            return acc;
+        }, {});
+
+        container.innerHTML = Object.entries(grouped).map(([cat, items]) => `
+            <div class="category-group" style="margin-bottom: 20px;">
+                <div style="font-size: 16px; font-weight: 700; color: #0284c7; margin-bottom: 10px; padding: 8px 16px; background: #e0f2fe; border-radius: 12px;">${escapeHtml(cat)} (${items.length})</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                    ${items.map(item => `
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${escapeHtml(item.name)}</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Stock: ${item.quantity} | ₱${item.price ? item.price.toFixed(2) : '0.00'}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    openPopupModal('categoryModePopup');
+};
+
 // ==================== TOAST & ALERTS ====================
-window.showToast = function(message, type = 'success', stayDuration = 5000) {
+window.showToast = function(message, type = 'success') {
     let container = document.querySelector('.toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -739,42 +695,17 @@ window.showToast = function(message, type = 'success', stayDuration = 5000) {
     }
     
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+    toast.className = `toast ${type} animate-slide-in`;
     toast.innerHTML = `
         <span class="toast-message">${escapeHtml(message)}</span>
-        <button class="toast-close" onclick="window.dismissToast(this.parentElement)">&times;</button>
+        <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
     `;
     container.appendChild(toast);
     
-    // Start entrance animation: 2s fade in
-    toast.style.animation = 'toastFadeIn 2s cubic-bezier(0.22, 1, 0.36, 1) forwards';
-    
-    // After fade in (2s) + stay (5s) = 7s, start fade out (2s)
-    const dismissTimer = setTimeout(() => {
-        toast.style.animation = 'toastFadeOut 2s cubic-bezier(0.4, 0, 0.2, 1) forwards';
-        setTimeout(() => {
-            if (toast.parentElement) toast.remove();
-        }, 2000);
-    }, 2000 + stayDuration);
-    
-    // Store timer on element so manual close can clear it
-    toast._dismissTimer = dismissTimer;
-};
-
-window.dismissToast = function(toast) {
-    if (!toast || toast._isDismissing) return;
-    toast._isDismissing = true;
-    
-    // Clear auto-dismiss timer if exists
-    if (toast._dismissTimer) {
-        clearTimeout(toast._dismissTimer);
-    }
-    
-    // Start fade out immediately (2s)
-    toast.style.animation = 'toastFadeOut 2s cubic-bezier(0.4, 0, 0.2, 1) forwards';
     setTimeout(() => {
-        if (toast.parentElement) toast.remove();
-    }, 2000);
+        toast.classList.add('animate-fade-out');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
 };
 
 // ==================== FLOATING ALERT ====================
@@ -788,19 +719,19 @@ function renderFloatingAlert(lowItems) {
         alert.className = 'floating-alert';
         document.body.appendChild(alert);
     }
-    
+
     // Clear any existing timer
     if (floatingAlertTimer) {
         clearTimeout(floatingAlertTimer);
         floatingAlertTimer = null;
     }
-    
+
     // Remove closing class if it was fading out
     alert.classList.remove('floating-alert-closing');
     alert.style.display = 'block';
     alert.style.opacity = '1';
     alert.style.transform = 'translateY(0)';
-    
+
     alert.innerHTML = `
         <div class="floating-alert-content" onclick="window.openAlertsPanel()" style="cursor: pointer;">
             <span class="floating-alert-icon">⚠️</span>
@@ -808,23 +739,23 @@ function renderFloatingAlert(lowItems) {
         </div>
         <button class="floating-alert-close" onclick="event.stopPropagation(); window.dismissFloatingAlert()">&times;</button>
     `;
-    
+
     // NO auto-dismiss — stays until stock is restored or user clicks X
 }
 
 window.dismissFloatingAlert = function() {
     const alert = document.getElementById('floatingStockAlert');
     if (!alert || alert.style.display === 'none') return;
-    
+
     // Clear any timer
     if (floatingAlertTimer) {
         clearTimeout(floatingAlertTimer);
         floatingAlertTimer = null;
     }
-    
+
     // Add smooth exit animation
     alert.classList.add('floating-alert-closing');
-    
+
     setTimeout(() => {
         alert.style.display = 'none';
         alert.classList.remove('floating-alert-closing');
