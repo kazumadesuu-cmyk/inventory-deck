@@ -141,7 +141,7 @@ async function handleFormSubmit(e) {
         showToast('Product added successfully');
 
         // Optimistically add to activity log
-        addOptimisticActivity(data.name, 'ADD', data.quantity || 0, 0);
+        addInstantActivity(data.name, 'ADD', data.quantity || 0, 0);
     }
     closeModal();
 }
