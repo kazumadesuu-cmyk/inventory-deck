@@ -378,8 +378,6 @@ function updateRevenuePopup(sales) {
     `}).join('');
 }
 
-let instantActivityLogs = [];
-
 function updateActivityPopup(logs) {
     const tbody = document.getElementById('auditLogBookTableBody');
     if (!tbody) return;
@@ -581,6 +579,35 @@ window.updateLivePrice = function() {
     const isSell = document.getElementById('tabSellModeBtn').classList.contains('active-tab');
     document.getElementById('bulkTotalDisplay').textContent = '₱' + total.toFixed(2);
     document.getElementById('bulkTotalDisplay').style.color = isSell ? '#22c55e' : '#0284c7';
+};
+
+
+// ==================== SOLD INDICATOR POP-OUT ====================
+window.showSoldIndicator = function(productName, amount) {
+    let indicator = document.getElementById('soldPopIndicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'soldPopIndicator';
+        indicator.className = 'sold-pop-indicator';
+        document.body.appendChild(indicator);
+    }
+    indicator.textContent = `💰 +₱${amount.toFixed(2)}`;
+    indicator.classList.remove('fading');
+    indicator.style.display = 'block';
+    indicator.style.opacity = '1';
+    indicator.style.transform = 'translate(-50%, -50%) scale(1)';
+
+    // Re-trigger animation
+    indicator.style.animation = 'none';
+    indicator.offsetHeight; // Force reflow
+    indicator.style.animation = 'soldPopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+
+    setTimeout(() => {
+        indicator.classList.add('fading');
+        setTimeout(() => {
+            indicator.style.display = 'none';
+        }, 500);
+    }, 1500);
 };
 
 window.handleBundleAction = async function() {
