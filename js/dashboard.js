@@ -366,6 +366,8 @@ function updateRevenuePopup(sales) {
     `}).join('');
 }
 
+let currentActivityFilter = 'ALL';
+
 function updateActivityPopup(logs) {
     const tbody = document.getElementById('auditLogBookTableBody');
     if (!tbody) return;
@@ -380,25 +382,55 @@ function updateActivityPopup(logs) {
         return true;
     });
 
-    if (uniqueLogs.length === 0) {
-        tbody.innerHTML = '<tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr>';
+    // Store for filtering
+    window.allActivityLogs = uniqueLogs;
+    renderActivityTable(uniqueLogs, currentActivityFilter);
+}
+
+function renderActivityTable(logs, filter) {
+    const tbody = document.getElementById('auditLogBookTableBody');
+    if (!tbody) return;
+
+    let filteredLogs = logs;
+    if (filter !== 'ALL') {
+        filteredLogs = logs.filter(log => log.action_type === filter);
+    }
+
+    if (filteredLogs.length === 0) {
+        const emptyMsg = filter === 'ALL' ? 'No activity recorded yet.' : `No ${filter.toLowerCase()} activity recorded yet.`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">${emptyMsg}</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = uniqueLogs.map((log, index) => {
+    tbody.innerHTML = filteredLogs.map((log, index) => {
         const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
         const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
+        const actionIcon = log.action_type === 'SELL' ? '💰' : log.action_type === 'RESTOCK' ? '📦' : '➕';
         const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
         return `
-        <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
+        <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s" data-action="${log.action_type}">
             <td style="font-size: 12px; color: #94a3b8;">${date}</td>
             <td>${escapeHtml(log.product_name)}</td>
-            <td><span style="color: ${actionColor}; font-weight: 700;">${log.action_type}</span></td>
+            <td><span style="color: ${actionColor}; font-weight: 700;">${actionIcon} ${log.action_type}</span></td>
             <td>${log.quantity || 0}</td>
             <td>${revenueText}</td>
         </tr>
     `}).join('');
 }
+
+window.filterActivity = function(filter) {
+    currentActivityFilter = filter;
+
+    // Update tab styles
+    document.querySelectorAll('.activity-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.filter === filter);
+    });
+
+    // Re-render with filter
+    if (window.allActivityLogs) {
+        renderActivityTable(window.allActivityLogs, filter);
+    }
+};
 
 function addInstantActivity(productName, action, quantity, revenue) {
     const log = {

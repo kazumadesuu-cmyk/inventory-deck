@@ -521,9 +521,9 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 }
 
 .logout-btn {
-    background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
-    color: #be185d;
-    border: 2px solid #f9a8d4;
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    color: #0369a1;
+    border: 2px solid #7dd3fc;
     padding: 10px 22px;
     border-radius: 50px;
     font-weight: 700;
@@ -535,7 +535,7 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     display: flex;
     align-items: center;
     gap: 8px;
-    box-shadow: 0 4px 15px rgba(244, 143, 177, 0.2);
+    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.2);
     position: relative;
     overflow: hidden;
 }
@@ -561,11 +561,11 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 }
 
 .logout-btn:hover {
-    background: linear-gradient(135deg, #fbcfe8 0%, #f9a8d4 100%);
-    color: #9d174d;
-    border-color: #f472b6;
+    background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%);
+    color: #0284c7;
+    border-color: #38bdf8;
     transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 8px 25px rgba(244, 143, 177, 0.35);
+    box-shadow: 0 8px 25px rgba(2, 132, 199, 0.35);
 }
 
 .logout-btn:hover::before {
@@ -580,7 +580,7 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 
 .logout-btn:active {
     transform: translateY(-1px) scale(0.98);
-    box-shadow: 0 3px 10px rgba(244, 143, 177, 0.25);
+    box-shadow: 0 3px 10px rgba(2, 132, 199, 0.25);
 }
 
 @keyframes waveHand {
@@ -1153,9 +1153,53 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 }
 
 .tab-btn:not(.active-tab):hover {
-    background: #fff0f3;
-    border-color: #f472b6;
+    background: #f0f9ff;
+    border-color: #0284c7;
     color: #0284c7;
+}
+
+
+/* ---------- ACTIVITY FILTER TABS ---------- */
+.activity-filter-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 20px;
+    padding: 4px;
+    background: #f8fafc;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+}
+
+.activity-tab {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    text-align: center;
+}
+
+.activity-tab:hover {
+    background: #e0f2fe;
+    color: #0284c7;
+    transform: translateY(-1px);
+}
+
+.activity-tab.active {
+    background: #0284c7;
+    color: white;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+}
+
+.activity-tab.active:hover {
+    background: #0369a1;
+    transform: translateY(-1px);
 }
 
 /* ---------- POPUP TABLES ---------- */

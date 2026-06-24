@@ -13,12 +13,12 @@
 <div class="sidebar-nav">
     <div class="hamburger-indicator"><span></span><span></span><span></span></div>
     <nav class="sidebar-menu-list">
-        <a href="javascript:void(0)" class="sidebar-menu-item main-node" onclick="return false;">Dashboard</a>
+        <a href="#dashboard" class="sidebar-menu-item main-node">Dashboard</a>
         <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openPopupModal('productsPopup'); return false;">Inventory summary</a>
         <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openAlertsPanel(); return false;">Low-stock alerts</a>
         <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openPopupModal('recentActivityLogBookPopup'); return false;">Recent activity</a>
         <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openPopupModal('stockAlertHistoryPopup'); return false;">Alert history</a>
-        <a href="javascript:void(0)" class="sidebar-menu-item main-node" onclick="return false;">Products / Items</a>
+        <a href="#products" class="sidebar-menu-item main-node">Products / Items</a>
         <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openPopupModal('productsPopup'); return false;">Product list</a>
         <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openAddModal(); return false;">Add product</a>
         <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openCategoryModeModal(); return false;">Categories</a>
@@ -150,6 +150,12 @@
 <div class="modal-overlay" id="recentActivityLogBookPopup" onclick="closePopupModalOnBackground(event, 'recentActivityLogBookPopup')">
     <div class="modal-box wide-modal-box">
         <h3>📋 Recent Activity Log</h3>
+        <div class="activity-filter-tabs">
+            <button type="button" class="activity-tab active" data-filter="ALL" onclick="filterActivity('ALL')">All</button>
+            <button type="button" class="activity-tab" data-filter="SELL" onclick="filterActivity('SELL')">💰 Sold</button>
+            <button type="button" class="activity-tab" data-filter="RESTOCK" onclick="filterActivity('RESTOCK')">📦 Restock</button>
+            <button type="button" class="activity-tab" data-filter="ADD" onclick="filterActivity('ADD')">➕ Add</button>
+        </div>
         <table class="popup-table">
             <thead><tr><th>Time</th><th>Product</th><th>Action</th><th>Qty</th><th>Revenue</th></tr></thead>
             <tbody id="auditLogBookTableBody"><tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr></tbody>
@@ -211,8 +217,8 @@
         <h3 style="margin: 0 0 12px; color: #0f172a; font-size: 22px;">See you soon!</h3>
         <p style="color: #64748b; margin-bottom: 24px; font-size: 15px;">Are you sure you want to log out of Stock Space?</p>
         <div style="display: flex; gap: 12px; justify-content: center;">
-            <button type="button" class="modal-close-btn" style="margin: 0; width: auto; padding: 12px 28px;" onclick="closePopupModal('logoutConfirmModal')">Stay</button>
-            <button type="button" class="add-product-btn" style="margin: 0; width: auto; padding: 12px 28px; background: #ef4444;" onclick="confirmLogout()">Log Out</button>
+            <button type="button" class="modal-close-btn" style="margin: 0; width: auto; padding: 12px 28px;" onclick="closePopupModal('logoutConfirmModal')">No</button>
+            <button type="button" class="add-product-btn" style="margin: 0; width: auto; padding: 12px 28px; background: #ef4444;" onclick="confirmLogout()">Yes</button>
         </div>
     </div>
 </div>
