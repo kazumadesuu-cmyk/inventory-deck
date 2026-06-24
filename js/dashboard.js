@@ -33,113 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ==================== NOTIFICATIONS ====================
-let notifPermissionDismissed = false;
-
-function requestNotificationPermission() {
-    if (!('Notification' in window)) {
-        console.log('This browser does not support notifications');
-        return;
-    }
-
-    // Already granted - all good
-    if (Notification.permission === 'granted') {
-        console.log('Notification permission already granted');
-        return;
-    }
-
-    // Already denied - don't ask again unless user clicks settings
-    if (Notification.permission === 'denied') {
-        console.log('Notification permission denied previously');
-        return;
-    }
-
-    // Default - show our cute modal instead of browser prompt
-    showNotifPermissionModal();
-}
-
-function showNotifPermissionModal() {
-    // Check if user dismissed it before (using localStorage)
-    if (localStorage.getItem('notifModalDismissed') === 'true') {
-        return;
-    }
-
-    const modal = document.getElementById('notifPermissionModal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
-}
-
-window.enableNotifPermission = function() {
-    const modal = document.getElementById('notifPermissionModal');
-    if (modal) modal.style.display = 'none';
-
-    Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-            console.log('Notification permission granted');
-            showToast('🔔 Notifications enabled! You'll get alerts when stock is low.', 'success');
-            // Send a test notification
-            setTimeout(() => {
-                new Notification('✅ Stock Space', {
-                    body: 'Notifications are working! You'll be alerted when stock runs low.',
-                    icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png'
-                });
-            }, 1000);
-        } else {
-            console.log('Notification permission denied');
-            showToast('Notifications disabled. You can enable them in browser settings.', 'warning');
-        }
-    });
-};
-
-window.dismissNotifPermission = function() {
-    const modal = document.getElementById('notifPermissionModal');
-    if (modal) modal.style.display = 'none';
-
-    localStorage.setItem('notifModalDismissed', 'true');
-    console.log('Notification modal dismissed');
-};
-
-function showStockNotification(productName, quantity, alertLimit) {
-    if (!('Notification' in window)) {
-        console.log('Notifications not supported');
-        return;
-    }
-
-    if (Notification.permission !== 'granted') {
-        console.log('Notification permission not granted');
-        return;
-    }
-
-    const title = '⚠️ Stock Space Alert';
-    const body = `${productName} is low on stock! Only ${quantity} left (limit: ${alertLimit})`;
-
-    // Use simple Notification API (most reliable)
-    try {
-        const notification = new Notification(title, {
-            body: body,
-            icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-            badge: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-            tag: `stock-alert-${productName}`,
-            requireInteraction: true,
-            renotify: true
-        });
-
-        notification.onclick = function() {
-            window.focus();
-            notification.close();
-        };
-
-        console.log('Notification sent for:', productName);
-    } catch (err) {
-        console.error('Notification error:', err);
-    }
-}
-
 function initializeDashboard() {
-    // Request notification permission for low stock alerts
-    requestNotificationPermission();
-
     // Real-time product listener
     unsubscribeProducts = subscribeToProducts((newProducts) => {
         products = newProducts;
@@ -168,8 +62,20 @@ function initializeDashboard() {
     // Logout button with confirmation
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            openPopupModal('logoutConfirmModal');
+        logoutBtn.addEventListener('click', async () => {
+            const confirmed = confirm('Are you sure you want to log out?');
+            if (!confirmed) return;
+            
+            try {
+                if (unsubscribeProducts) unsubscribeProducts();
+                if (unsubscribeSales) unsubscribeSales();
+                if (unsubscribeActivity) unsubscribeActivity();
+                if (unsubscribeAlerts) unsubscribeAlerts();
+                await logoutUser();
+            } catch (err) {
+                console.error('Logout error:', err);
+                window.location.href = 'index.html';
+            }
         });
     }
     
@@ -378,7 +284,11 @@ function checkLowStock(productList) {
         updateAlertsPanel();
         showLowStockModal(lowItems);
         
-        // Individual product notifications are shown above per product
+        if (Notification.permission === 'granted') {
+            new Notification('Stock Alert', {
+                body: `${lowItems.length} items are low on stock`
+            });
+        }
     } else {
         lowStockHistory = [];
         alertedProductIds.clear();
@@ -468,8 +378,6 @@ function updateRevenuePopup(sales) {
     `}).join('');
 }
 
-let currentActivityFilter = 'ALL';
-
 function updateActivityPopup(logs) {
     const tbody = document.getElementById('auditLogBookTableBody');
     if (!tbody) return;
@@ -484,55 +392,25 @@ function updateActivityPopup(logs) {
         return true;
     });
 
-    // Store for filtering
-    window.allActivityLogs = uniqueLogs;
-    renderActivityTable(uniqueLogs, currentActivityFilter);
-}
-
-function renderActivityTable(logs, filter) {
-    const tbody = document.getElementById('auditLogBookTableBody');
-    if (!tbody) return;
-
-    let filteredLogs = logs;
-    if (filter !== 'ALL') {
-        filteredLogs = logs.filter(log => log.action_type === filter);
-    }
-
-    if (filteredLogs.length === 0) {
-        const emptyMsg = filter === 'ALL' ? 'No activity recorded yet.' : `No ${filter.toLowerCase()} activity recorded yet.`;
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">${emptyMsg}</td></tr>`;
+    if (uniqueLogs.length === 0) {
+        tbody.innerHTML = '<tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr>';
         return;
     }
 
-    tbody.innerHTML = filteredLogs.map((log, index) => {
+    tbody.innerHTML = uniqueLogs.map((log, index) => {
         const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
         const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
-        const actionIcon = log.action_type === 'SELL' ? '💰' : log.action_type === 'RESTOCK' ? '📦' : '➕';
         const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
         return `
-        <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s" data-action="${log.action_type}">
+        <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
             <td style="font-size: 12px; color: #94a3b8;">${date}</td>
             <td>${escapeHtml(log.product_name)}</td>
-            <td><span style="color: ${actionColor}; font-weight: 700;">${actionIcon} ${log.action_type}</span></td>
+            <td><span style="color: ${actionColor}; font-weight: 700;">${log.action_type}</span></td>
             <td>${log.quantity || 0}</td>
             <td>${revenueText}</td>
         </tr>
     `}).join('');
 }
-
-window.filterActivity = function(filter) {
-    currentActivityFilter = filter;
-
-    // Update tab styles
-    document.querySelectorAll('.activity-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.filter === filter);
-    });
-
-    // Re-render with filter
-    if (window.allActivityLogs) {
-        renderActivityTable(window.allActivityLogs, filter);
-    }
-};
 
 function addInstantActivity(productName, action, quantity, revenue) {
     const log = {
@@ -588,10 +466,8 @@ document.addEventListener('click', function(e) {
     const panel = document.getElementById('alertsPanel');
     if (!panel) return;
 
-    // Check if panel is open
     if (!panel.classList.contains('alerts-panel-open')) return;
 
-    // Check if click is inside panel or on sidebar
     const sidebar = document.querySelector('.sidebar-nav');
     const isInsidePanel = panel.contains(e.target);
     const isOnSidebar = sidebar && sidebar.contains(e.target);
@@ -823,20 +699,6 @@ window.openCategoryModeModal = function() {
 };
 
 // ==================== TOAST & ALERTS ====================
-window.confirmLogout = async function() {
-    closePopupModal('logoutConfirmModal');
-    try {
-        if (unsubscribeProducts) unsubscribeProducts();
-        if (unsubscribeSales) unsubscribeSales();
-        if (unsubscribeActivity) unsubscribeActivity();
-        if (unsubscribeAlerts) unsubscribeAlerts();
-        await logoutUser();
-    } catch (err) {
-        console.error('Logout error:', err);
-        window.location.href = 'index.html';
-    }
-};
-
 window.showActionToast = function(message, type = 'sell') {
     let container = document.getElementById('actionToastContainer');
     if (!container) {
@@ -891,6 +753,34 @@ window.showActionToast = function(message, type = 'sell') {
             if (toast.parentNode) toast.remove();
         }, 2000);
     }, 5000);
+};
+
+window.confirmLogout = async function() {
+    closePopupModal('logoutConfirmModal');
+    try {
+        if (unsubscribeProducts) unsubscribeProducts();
+        if (unsubscribeSales) unsubscribeSales();
+        if (unsubscribeActivity) unsubscribeActivity();
+        if (unsubscribeAlerts) unsubscribeAlerts();
+        await logoutUser();
+    } catch (err) {
+        console.error('Logout error:', err);
+        window.location.href = 'index.html';
+    }
+};
+
+window.filterActivity = function(filter) {
+    currentActivityFilter = filter;
+
+    // Update tab styles
+    document.querySelectorAll('.activity-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.filter === filter);
+    });
+
+    // Re-render with filter
+    if (window.allActivityLogs) {
+        renderActivityTable(window.allActivityLogs, filter);
+    }
 };
 
 window.showToast = function(message, type = 'success') {
