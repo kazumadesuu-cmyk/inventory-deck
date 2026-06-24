@@ -12,7 +12,6 @@ let currentFocusProduct = null;
 let lowStockHistory = [];
 let alertedProductIds = new Set();
 let instantActivityLogs = [];
-let currentActivityFilter = 'ALL';
 
 // Prevent double-recording with cooldown
 let actionCooldown = false;
@@ -71,7 +70,6 @@ function initializeDashboard() {
     
     // Activity listener
     unsubscribeActivity = subscribeToActivity((logs) => {
-        window.allActivityLogs = logs;
         updateActivityPopup(logs);
     });
     
@@ -160,6 +158,9 @@ async function handleFormSubmit(e) {
         await addProduct(data);
         addInstantActivity(data.name, 'ADD', data.quantity || 0, 0);
         showToast('Product added successfully');
+
+        // Optimistically add to activity log
+        addInstantActivity(data.name, 'ADD', data.quantity || 0, 0);
     }
     closeModal();
 }
@@ -277,31 +278,8 @@ window.restockOne = restockOne;
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
 
-    // === CLEANUP: Remove alerts for items that recovered ===
-    const currentlyLowIds = new Set(lowItems.map(p => p.id));
-    for (const id of Array.from(alertedProductIds)) {
-        if (!currentlyLowIds.has(id)) {
-            alertedProductIds.delete(id);
-        }
-    }
-    lowStockHistory = lowStockHistory.filter(h => currentlyLowIds.has(h.id));
-
-    // Update banner visibility
-    const banner = document.getElementById('lowStockBanner');
-    const bannerCount = document.getElementById('lowStockBannerCount');
-    if (banner && bannerCount) {
-        if (lowItems.length > 0) {
-            banner.style.display = 'block';
-            bannerCount.textContent = `${lowItems.length} item${lowItems.length > 1 ? 's' : ''}`;
-        } else {
-            banner.style.display = 'none';
-        }
-    }
-
-    // Remove floating alert if no low stock
-    if (lowItems.length === 0) {
-        removeFloatingAlert();
-    }
+    // Calculate newly alerted items BEFORE adding to set
+    const newlyAlerted = lowItems.filter(item => !alertedProductIds.has(item.id));
 
     if (lowItems.length > 0) {
         lowItems.forEach(item => {
@@ -328,7 +306,7 @@ function checkLowStock(productList) {
         updateAlertsPanel();
         showLowStockModal(lowItems);
 
-        const newlyAlerted = lowItems.filter(item => !alertedProductIds.has(item.id));
+        // Browser notification - only for newly alerted items
         if (Notification.permission === 'granted' && newlyAlerted.length > 0) {
             const productNames = newlyAlerted.map(item => item.name).join(', ');
             const totalCount = newlyAlerted.length;
@@ -900,56 +878,3 @@ function removeFloatingAlert() {
         alert.classList.remove('floating-alert-closing');
     }, 500);
 }
-
-// ==================== MISSING FUNCTION DEFINITIONS ====================
-
-window.dismissNotifPermission = function() {
-    localStorage.setItem('notifPromptDismissed', 'true');
-    closePopupModal('notifPermissionModal');
-};
-
-window.enableNotifPermission = async function() {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-        showToast('Notifications enabled!', 'success');
-    } else {
-        localStorage.setItem('notifPromptDismissed', 'true');
-    }
-    closePopupModal('notifPermissionModal');
-};
-
-window.renderActivityTable = function(logs, filter = 'ALL') {
-    const tbody = document.getElementById('auditLogBookTableBody');
-    if (!tbody) return;
-
-    let filtered = logs;
-    if (filter !== 'ALL') {
-        filtered = logs.filter(l => l.action_type === filter);
-    }
-
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = filtered.map((log, index) => {
-        const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
-        const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
-        const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
-        return `
-        <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
-            <td style="font-size: 12px; color: #94a3b8;">${date}</td>
-            <td>${escapeHtml(log.product_name)}</td>
-            <td><span style="color: ${actionColor}; font-weight: 700;">${log.action_type}</span></td>
-            <td>${log.quantity || 0}</td>
-            <td>${revenueText}</td>
-        </tr>`;
-    }).join('');
-};
-
-// Show notification permission modal on first visit
-setTimeout(() => {
-    if (Notification.permission === 'default' && localStorage.getItem('notifPromptDismissed') !== 'true') {
-        openPopupModal('notifPermissionModal');
-    }
-}, 3000);
