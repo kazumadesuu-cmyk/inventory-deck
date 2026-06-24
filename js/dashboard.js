@@ -71,7 +71,7 @@ function initializeDashboard() {
     
     // Activity listener
     unsubscribeActivity = subscribeToActivity((logs) => {
-        window.allActivityLogs = logs;  // Store for filtering
+        window.allActivityLogs = logs;
         updateActivityPopup(logs);
     });
     
@@ -276,7 +276,33 @@ window.restockOne = restockOne;
 
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
-    
+
+    // === CLEANUP: Remove alerts for items that recovered ===
+    const currentlyLowIds = new Set(lowItems.map(p => p.id));
+    for (const id of Array.from(alertedProductIds)) {
+        if (!currentlyLowIds.has(id)) {
+            alertedProductIds.delete(id);
+        }
+    }
+    lowStockHistory = lowStockHistory.filter(h => currentlyLowIds.has(h.id));
+
+    // Update banner visibility
+    const banner = document.getElementById('lowStockBanner');
+    const bannerCount = document.getElementById('lowStockBannerCount');
+    if (banner && bannerCount) {
+        if (lowItems.length > 0) {
+            banner.style.display = 'block';
+            bannerCount.textContent = `${lowItems.length} item${lowItems.length > 1 ? 's' : ''}`;
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    // Remove floating alert if no low stock
+    if (lowItems.length === 0) {
+        removeFloatingAlert();
+    }
+
     if (lowItems.length > 0) {
         lowItems.forEach(item => {
             if (!alertedProductIds.has(item.id)) {
@@ -297,11 +323,11 @@ function checkLowStock(productList) {
                 existing.timestamp = new Date().toLocaleString();
             }
         });
-        
+
         renderFloatingAlert(lowItems);
         updateAlertsPanel();
         showLowStockModal(lowItems);
-        
+
         const newlyAlerted = lowItems.filter(item => !alertedProductIds.has(item.id));
         if (Notification.permission === 'granted' && newlyAlerted.length > 0) {
             const productNames = newlyAlerted.map(item => item.name).join(', ');
@@ -315,10 +341,8 @@ function checkLowStock(productList) {
                 requireInteraction: true
             });
         }
+    }
 }
-
-}
-
 function showLowStockModal(lowItems) {
     const list = document.getElementById('lowStockItemsListContainer');
     if (!list) return;
@@ -880,6 +904,7 @@ function removeFloatingAlert() {
 // ==================== MISSING FUNCTION DEFINITIONS ====================
 
 window.dismissNotifPermission = function() {
+    localStorage.setItem('notifPromptDismissed', 'true');
     closePopupModal('notifPermissionModal');
 };
 
@@ -887,6 +912,8 @@ window.enableNotifPermission = async function() {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
         showToast('Notifications enabled!', 'success');
+    } else {
+        localStorage.setItem('notifPromptDismissed', 'true');
     }
     closePopupModal('notifPermissionModal');
 };
@@ -919,3 +946,10 @@ window.renderActivityTable = function(logs, filter = 'ALL') {
         </tr>`;
     }).join('');
 };
+
+// Show notification permission modal on first visit
+setTimeout(() => {
+    if (Notification.permission === 'default' && localStorage.getItem('notifPromptDismissed') !== 'true') {
+        openPopupModal('notifPermissionModal');
+    }
+}, 3000);
