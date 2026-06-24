@@ -11,7 +11,26 @@ let unsubscribeAlerts = null;
 let currentFocusProduct = null;
 let lowStockHistory = [];
 let alertedProductIds = new Set();
-let instantActivityLogs = []; // Local cache for instant UI updates
+let instantActivityLogs = [];
+
+// Prevent double-recording with cooldown
+let actionCooldown = false;
+let cooldownTimer = null;
+
+function startActionCooldown() {
+    actionCooldown = true;
+    if (cooldownTimer) clearTimeout(cooldownTimer);
+    cooldownTimer = setTimeout(() => {
+        actionCooldown = false;
+        cooldownTimer = null;
+    }, 2000); // 2 seconds cooldown
+}
+
+function isActionOnCooldown() {
+    return actionCooldown;
+}
+
+ // Local cache for instant UI updates
 
 // Initialize dashboard - wait for auth to be ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -284,17 +303,18 @@ function checkLowStock(productList) {
         updateAlertsPanel();
         showLowStockModal(lowItems);
         
-        if (Notification.permission === 'granted') {
-            new Notification('Stock Alert', {
-                body: `${lowItems.length} items are low on stock`
-            });
-        }
-    } else {
-        lowStockHistory = [];
-        alertedProductIds.clear();
-        removeFloatingAlert();
-        updateAlertsPanel();
-    }
+        if (if (Notification.permission === 'granted' && newlyAlerted.length > 0) {
+                const productNames = newlyAlerted.map(item => item.name).join(', ');
+                const totalCount = newlyAlerted.length;
+                new Notification('⚠️ Stock Space Alert', {
+                    body: totalCount === 1 
+                        ? `${productNames} is low on stock! Only ${newlyAlerted[0].quantity} left (limit: ${newlyAlerted[0].alert_limit})`
+                        : `${totalCount} items are low on stock: ${productNames}`,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+                    tag: 'stock-alert-batch',
+                    requireInteraction: true
+                });
+            }
 }
 
 function showLowStockModal(lowItems) {
@@ -769,13 +789,14 @@ window.confirmLogout = async function() {
     }
 };
 
-window.filterActivity = function(filter) {
+window.filterActivityLog = function(filter, clickedBtn) {
     currentActivityFilter = filter;
 
-    // Update tab styles
+    // Update tab styles - remove active from all, add to clicked
     document.querySelectorAll('.activity-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.filter === filter);
+        tab.classList.remove('active');
     });
+    if (clickedBtn) clickedBtn.classList.add('active');
 
     // Re-render with filter
     if (window.allActivityLogs) {
