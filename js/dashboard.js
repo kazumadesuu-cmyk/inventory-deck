@@ -822,51 +822,42 @@ function renderFloatingAlert(lowItems) {
         alert = document.createElement('div');
         alert.id = 'floatingStockAlert';
         alert.className = 'floating-alert';
+        alert.onclick = function(e) {
+            e.stopPropagation();
+            window.openAlertsPanel();
+        };
         document.body.appendChild(alert);
     }
 
-    // Clear any existing timer
     if (floatingAlertTimer) {
         clearTimeout(floatingAlertTimer);
         floatingAlertTimer = null;
     }
 
-    // Remove closing class if it was fading out
     alert.classList.remove('floating-alert-closing');
-    alert.style.display = 'block';
+    alert.style.display = 'flex';
     alert.style.opacity = '1';
     alert.style.transform = 'translateY(0)';
 
     alert.innerHTML = `
-        <div class="floating-alert-content" onclick="window.openAlertsPanel()" style="cursor: pointer;">
-            <span class="floating-alert-icon">⚠️</span>
-            <span class="floating-alert-text">${lowItems.length} item(s) low on stock</span>
-        </div>
-        <button class="floating-alert-close" onclick="event.stopPropagation(); window.dismissFloatingAlert()">&times;</button>
+        <span class="floating-alert-icon">⚠️</span>
+        <span class="floating-alert-text">${lowItems.length} item(s) low on stock</span>
+        <span class="floating-alert-hint">Click to view →</span>
     `;
-
-    // NO auto-dismiss — stays until stock is restored or user clicks X
 }
 
-window.dismissFloatingAlert = function() {
+function removeFloatingAlert() {
     const alert = document.getElementById('floatingStockAlert');
     if (!alert || alert.style.display === 'none') return;
 
-    // Clear any timer
     if (floatingAlertTimer) {
         clearTimeout(floatingAlertTimer);
         floatingAlertTimer = null;
     }
 
-    // Add smooth exit animation
     alert.classList.add('floating-alert-closing');
-
     setTimeout(() => {
         alert.style.display = 'none';
         alert.classList.remove('floating-alert-closing');
     }, 500);
-};
-
-function removeFloatingAlert() {
-    window.dismissFloatingAlert();
 }

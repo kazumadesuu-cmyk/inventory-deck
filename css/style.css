@@ -1741,6 +1741,9 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), 
                 transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .floating-alert:hover {
@@ -1753,17 +1756,7 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     transform: translateX(40px) scale(0.95) !important;
 }
 
-.floating-alert-content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
 
-.floating-alert-content:hover {
-    transform: translateX(4px);
-}
 
 .floating-alert-icon {
     font-size: 22px;
