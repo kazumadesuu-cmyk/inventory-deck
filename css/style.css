@@ -2069,3 +2069,12 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 /* ==========================================================================
    END OF STOCK SPACE STYLESHEET
    ========================================================================== */
+
+/* ---------- NOTIFICATION PERMISSION MODAL ---------- */
+#notifPermissionModal .modal-box {
+    animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#notifPermissionModal .modal-box:hover {
+    transform: scale(1.02);
+}
