@@ -1410,29 +1410,25 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     transform-origin: bottom right;
 }
 
-@keyframes toastSlideUp {
-    from {
+@keyframes toastFadeIn {
+    0% {
         opacity: 0;
-        transform: translateY(20px) scale(0.95);
+        transform: translateY(30px) scale(0.9);
     }
-    60% {
-        opacity: 1;
-        transform: translateY(-4px) scale(1.02);
-    }
-    to {
+    100% {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
 }
 
 @keyframes toastFadeOut {
-    from {
+    0% {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
-    to {
+    100% {
         opacity: 0;
-        transform: translateY(10px) scale(0.95);
+        transform: translateY(20px) scale(0.9);
     }
 }
 
@@ -1666,6 +1662,12 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     display: flex;
     align-items: center;
     gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.floating-alert-content:hover {
+    transform: translateX(4px);
 }
 
 .floating-alert-icon {
@@ -1695,6 +1697,7 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     justify-content: center;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    margin-left: 8px;
 }
 
 .floating-alert-close:hover {

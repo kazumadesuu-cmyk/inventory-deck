@@ -11,6 +11,7 @@ let unsubscribeAlerts = null;
 let currentFocusProduct = null;
 let lowStockHistory = [];
 let alertedProductIds = new Set();
+let instantActivityLogs = []; // Local cache for instant UI updates
 
 // Initialize dashboard - wait for auth to be ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -136,7 +137,11 @@ async function handleFormSubmit(e) {
         showToast('Product updated successfully');
     } else {
         await addProduct(data);
+        addInstantActivity(data.name, 'ADD', data.quantity || 0, 0);
         showToast('Product added successfully');
+
+        // Optimistically add to activity log
+        addOptimisticActivity(data.name, 'ADD', data.quantity || 0, 0);
     }
     closeModal();
 }
@@ -367,14 +372,28 @@ function updateRevenuePopup(sales) {
     `}).join('');
 }
 
+let instantActivityLogs = [];
+
 function updateActivityPopup(logs) {
     const tbody = document.getElementById('auditLogBookTableBody');
     if (!tbody) return;
-    if (logs.length === 0) {
+
+    // Merge instant logs with Firestore logs, remove duplicates
+    const allLogs = [...instantActivityLogs, ...logs];
+    const seen = new Set();
+    const uniqueLogs = allLogs.filter(log => {
+        const key = `${log.product_name}-${log.action_type}-${log.quantity}-${log.created_at}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    if (uniqueLogs.length === 0) {
         tbody.innerHTML = '<tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr>';
         return;
     }
-    tbody.innerHTML = logs.map((log, index) => {
+
+    tbody.innerHTML = uniqueLogs.map((log, index) => {
         const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
         const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
         const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
@@ -387,6 +406,25 @@ function updateActivityPopup(logs) {
             <td>${revenueText}</td>
         </tr>
     `}).join('');
+}
+
+function addInstantActivity(productName, action, quantity, revenue) {
+    const log = {
+        product_name: productName,
+        action_type: action,
+        quantity: quantity,
+        revenue: revenue,
+        created_at: new Date()
+    };
+    instantActivityLogs.unshift(log);
+    // Keep only last 10 instant logs to avoid buildup
+    if (instantActivityLogs.length > 10) instantActivityLogs.pop();
+
+    // Refresh the popup if it's open
+    const tbody = document.getElementById('auditLogBookTableBody');
+    if (tbody) {
+        updateActivityPopup([]); // Will merge with instant logs
+    }
 }
 
 function updateAlertsPopup(alerts) {
@@ -553,9 +591,11 @@ window.handleBundleAction = async function() {
         }
         await updateStock(product.id, product.quantity - qty, (product.items_sold || 0) + qty, 'SELL', qty);
         showSoldIndicator(product.name, product.price * qty);
+        addInstantActivity(product.name, 'SELL', qty, (product.price || 0) * qty);
         showToast(`Sold ${qty}x ${product.name}`);
     } else {
         await updateStock(product.id, product.quantity + qty, product.items_sold || 0, 'RESTOCK', qty);
+        addInstantActivity(product.name, 'RESTOCK', qty, 0);
         showToast(`Restocked ${qty}x ${product.name}`);
     }
     closePopupModal('focusModal');
@@ -674,7 +714,7 @@ function renderFloatingAlert(lowItems) {
         document.body.appendChild(alert);
     }
 
-    // Clear existing timer if any
+    // Clear any existing timer
     if (floatingAlertTimer) {
         clearTimeout(floatingAlertTimer);
         floatingAlertTimer = null;
@@ -687,24 +727,21 @@ function renderFloatingAlert(lowItems) {
     alert.style.transform = 'translateY(0)';
 
     alert.innerHTML = `
-        <div class="floating-alert-content">
+        <div class="floating-alert-content" onclick="window.openAlertsPanel()" style="cursor: pointer;">
             <span class="floating-alert-icon">⚠️</span>
             <span class="floating-alert-text">${lowItems.length} item(s) low on stock</span>
-            <button class="floating-alert-close" onclick="window.dismissFloatingAlert()">&times;</button>
         </div>
+        <button class="floating-alert-close" onclick="event.stopPropagation(); window.dismissFloatingAlert()">&times;</button>
     `;
 
-    // Auto-dismiss after 5 seconds
-    floatingAlertTimer = setTimeout(() => {
-        window.dismissFloatingAlert();
-    }, 5000);
+    // NO auto-dismiss — stays until stock is restored or user clicks X
 }
 
 window.dismissFloatingAlert = function() {
     const alert = document.getElementById('floatingStockAlert');
     if (!alert || alert.style.display === 'none') return;
 
-    // Clear auto-dismiss timer
+    // Clear any timer
     if (floatingAlertTimer) {
         clearTimeout(floatingAlertTimer);
         floatingAlertTimer = null;
