@@ -278,7 +278,17 @@ window.restockOne = restockOne;
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
 
-    // Calculate newly alerted items BEFORE adding to set
+    // Items that are no longer low (restocked) - clear their alert status
+    const currentlyLowIds = new Set(lowItems.map(p => p.id));
+    for (const id of Array.from(alertedProductIds)) {
+        const product = productList.find(p => p.id === id);
+        if (product && product.quantity > product.alert_limit) {
+            // Item was restocked above limit - reset alert status
+            alertedProductIds.delete(id);
+        }
+    }
+
+    // Items that just went low (not previously alerted)
     const newlyAlerted = lowItems.filter(item => !alertedProductIds.has(item.id));
 
     if (lowItems.length > 0) {
@@ -319,6 +329,9 @@ function checkLowStock(productList) {
                 requireInteraction: true
             });
         }
+    } else {
+        // No low items - remove floating alert
+        removeFloatingAlert();
     }
 }
 function showLowStockModal(lowItems) {
