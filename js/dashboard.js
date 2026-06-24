@@ -581,7 +581,6 @@ window.updateLivePrice = function() {
     document.getElementById('bulkTotalDisplay').style.color = isSell ? '#22c55e' : '#0284c7';
 };
 
-
 // ==================== SOLD INDICATOR POP-OUT ====================
 window.showSoldIndicator = function(productName, amount) {
     let indicator = document.getElementById('soldPopIndicator');
@@ -596,17 +595,12 @@ window.showSoldIndicator = function(productName, amount) {
     indicator.style.display = 'block';
     indicator.style.opacity = '1';
     indicator.style.transform = 'translate(-50%, -50%) scale(1)';
-
-    // Re-trigger animation
     indicator.style.animation = 'none';
-    indicator.offsetHeight; // Force reflow
+    indicator.offsetHeight;
     indicator.style.animation = 'soldPopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
-
     setTimeout(() => {
         indicator.classList.add('fading');
-        setTimeout(() => {
-            indicator.style.display = 'none';
-        }, 500);
+        setTimeout(() => { indicator.style.display = 'none'; }, 500);
     }, 1500);
 };
 
