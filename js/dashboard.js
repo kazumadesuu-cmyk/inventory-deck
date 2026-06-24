@@ -745,6 +745,20 @@ window.showActionToast = function(message, type = 'sell') {
     }, 5000);
 };
 
+window.confirmLogout = async function() {
+    closePopupModal('logoutConfirmModal');
+    try {
+        if (unsubscribeProducts) unsubscribeProducts();
+        if (unsubscribeSales) unsubscribeSales();
+        if (unsubscribeActivity) unsubscribeActivity();
+        if (unsubscribeAlerts) unsubscribeAlerts();
+        await logoutUser();
+    } catch (err) {
+        console.error('Logout error:', err);
+        window.location.href = 'index.html';
+    }
+};
+
 window.showToast = function(message, type = 'success') {
     let container = document.querySelector('.toast-container');
     if (!container) {
