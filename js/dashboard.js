@@ -12,6 +12,7 @@ let currentFocusProduct = null;
 let lowStockHistory = [];
 let alertedProductIds = new Set();
 let instantActivityLogs = [];
+let currentActivityFilter = 'ALL';
 
 // Prevent double-recording with cooldown
 let actionCooldown = false;
@@ -70,6 +71,7 @@ function initializeDashboard() {
     
     // Activity listener
     unsubscribeActivity = subscribeToActivity((logs) => {
+        window.allActivityLogs = logs;
         updateActivityPopup(logs);
     });
     
@@ -81,9 +83,22 @@ function initializeDashboard() {
     // Logout button with confirmation
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            openCuteModal('logoutConfirmModal');
+        logoutBtn.addEventListener('click', async () => {
+            const confirmed = confirm('Are you sure you want to log out?');
+            if (!confirmed) return;
+            
+            try {
+                if (unsubscribeProducts) unsubscribeProducts();
+                if (unsubscribeSales) unsubscribeSales();
+                if (unsubscribeActivity) unsubscribeActivity();
+                if (unsubscribeAlerts) unsubscribeAlerts();
+                await logoutUser();
+            } catch (err) {
+                console.error('Logout error:', err);
+                window.location.href = 'index.html';
+            }
         });
+    }
     
     // Modal form handler
     const modalForm = document.getElementById('modalForm');
@@ -145,9 +160,6 @@ async function handleFormSubmit(e) {
         await addProduct(data);
         addInstantActivity(data.name, 'ADD', data.quantity || 0, 0);
         showToast('Product added successfully');
-
-        // Optimistically add to activity log
-        addInstantActivity(data.name, 'ADD', data.quantity || 0, 0);
     }
     closeModal();
 }
@@ -264,7 +276,18 @@ window.restockOne = restockOne;
 
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
-    
+
+    // Items that are no longer low (restocked above limit) - clear their alert status
+    for (const id of Array.from(alertedProductIds)) {
+        const product = productList.find(p => p.id === id);
+        if (product && product.quantity > product.alert_limit) {
+            alertedProductIds.delete(id);
+        }
+    }
+
+    // Items that just went low (not previously alerted) - notify instantly
+    const newlyAlerted = lowItems.filter(item => !alertedProductIds.has(item.id));
+
     if (lowItems.length > 0) {
         lowItems.forEach(item => {
             if (!alertedProductIds.has(item.id)) {
@@ -285,25 +308,28 @@ function checkLowStock(productList) {
                 existing.timestamp = new Date().toLocaleString();
             }
         });
-        
+
         renderFloatingAlert(lowItems);
         updateAlertsPanel();
         showLowStockModal(lowItems);
-        
-        if (if (Notification.permission === 'granted' && newlyAlerted.length > 0) {
-                const productNames = newlyAlerted.map(item => item.name).join(', ');
-                const totalCount = newlyAlerted.length;
-                new Notification('⚠️ Stock Space Alert', {
-                    body: totalCount === 1 
-                        ? `${productNames} is low on stock! Only ${newlyAlerted[0].quantity} left (limit: ${newlyAlerted[0].alert_limit})`
-                        : `${totalCount} items are low on stock: ${productNames}`,
-                    icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-                    tag: 'stock-alert-batch',
-                    requireInteraction: true
-                });
-            }
-}
 
+        // Browser notification - instantly for newly alerted items
+        if (Notification.permission === 'granted' && newlyAlerted.length > 0) {
+            const productNames = newlyAlerted.map(item => item.name).join(', ');
+            const totalCount = newlyAlerted.length;
+            new Notification('⚠️ Stock Space Alert', {
+                body: totalCount === 1 
+                    ? `${productNames} is low on stock! Only ${newlyAlerted[0].quantity} left (limit: ${newlyAlerted[0].alert_limit})`
+                    : `${totalCount} items are low on stock: ${productNames}`,
+                icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+                tag: 'stock-alert-batch',
+                requireInteraction: true
+            });
+        }
+    } else {
+        removeFloatingAlert();
+    }
+}
 function showLowStockModal(lowItems) {
     const list = document.getElementById('lowStockItemsListContainer');
     if (!list) return;
@@ -661,24 +687,17 @@ window.editProduct = function(id) {
 window.deleteProductItem = async function(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
-
-    window.productToDelete = product;
-    openCuteModal('deleteConfirmModal');
-};
-
-window.confirmDeleteProduct = async function() {
-    const product = window.productToDelete;
-    if (!product) return;
-
-    closeCuteModal('deleteConfirmModal');
+    
+    if (!confirm(`Are you sure you want to delete "${product.name}"?`)) return;
+    
     try {
-        await deleteProduct(product.id);
+        await deleteProduct(id);
         showToast(`Deleted ${product.name}`);
-        window.productToDelete = null;
     } catch (err) {
         showToast('Failed to delete product', 'error');
     }
 };
+
 // ==================== CATEGORY MODAL ====================
 window.openCategoryModeModal = function() {
     const container = document.getElementById('categoryModeContainer');
@@ -869,14 +888,57 @@ function removeFloatingAlert() {
     }, 500);
 }
 
-// ==================== CUTE MODAL HELPERS ====================
+// ==================== MISSING FUNCTION DEFINITIONS ====================
 
-window.openCuteModal = function(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.add('active');
+window.dismissNotifPermission = function() {
+    localStorage.setItem('notifPromptDismissed', 'true');
+    closePopupModal('notifPermissionModal');
 };
 
-window.closeCuteModal = function(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.remove('active');
+window.enableNotifPermission = async function() {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+        showToast('Notifications enabled!', 'success');
+    } else {
+        localStorage.setItem('notifPromptDismissed', 'true');
+    }
+    closePopupModal('notifPermissionModal');
 };
+
+window.renderActivityTable = function(logs, filter = 'ALL') {
+    const tbody = document.getElementById('auditLogBookTableBody');
+    if (!tbody) return;
+
+    let filtered = logs;
+    if (filter !== 'ALL') {
+        filtered = logs.filter(l => l.action_type === filter);
+    }
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filtered.map((log, index) => {
+        const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
+        const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
+        const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
+        return `
+        <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
+            <td style="font-size: 12px; color: #94a3b8;">${date}</td>
+            <td>${escapeHtml(log.product_name)}</td>
+            <td><span style="color: ${actionColor}; font-weight: 700;">${log.action_type}</span></td>
+            <td>${log.quantity || 0}</td>
+            <td>${revenueText}</td>
+        </tr>`;
+    }).join('');
+};
+
+// Auto-show notification permission modal on first visit
+setTimeout(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        if (localStorage.getItem('notifPromptDismissed') !== 'true') {
+            openPopupModal('notifPermissionModal');
+        }
+    }
+}, 3000);
