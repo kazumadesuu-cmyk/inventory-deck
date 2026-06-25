@@ -14,8 +14,18 @@ export async function addProduct(productData) {
     const userId = window.currentUser?.uid;
     if (!userId) throw new Error('User not authenticated');
 
-    const docRef = await addDoc(collection(db, PRODUCTS_COLLECTION), {
+    // FIX: Ensure price is stored as a number
+    const cleanData = {
         ...productData,
+        price: Number(productData.price) || 0,
+        quantity: Number(productData.quantity) || 0,
+        alert_limit: Number(productData.alert_limit) || 0,
+        items_sold: Number(productData.items_sold) || 0
+    };
+    console.log("[REVENUE] Adding product:", cleanData.name, "| price:", cleanData.price);
+
+    const docRef = await addDoc(collection(db, PRODUCTS_COLLECTION), {
+        ...cleanData,
         user_id: userId,
         created_at: serverTimestamp()
     });
@@ -68,12 +78,15 @@ export async function updateStock(productId, newQuantity, newItemsSold, action, 
         
         // Log sale to sales_history if selling
         if (action === 'SELL') {
-            const revenue = (product.price || 0) * deltaQty;
+            const price = Number(product.price) || 0;
+            console.log("[REVENUE] Product:", product.name, "| price:", price, "| qty:", deltaQty);
+            const revenue = price * deltaQty;
+            console.log("[REVENUE] Calculated revenue:", revenue);
             const saleData = {
                 user_id: window.currentUser.uid,
                 product_name: product.name,
                 category: product.category,
-                price_sold: product.price || 0,
+                price_sold: price,
                 quantity_sold: deltaQty,
                 revenue: revenue,
                 sold_at: serverTimestamp()

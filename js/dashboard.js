@@ -432,24 +432,32 @@ function updateTotalRevenue(sales) {
     const display = document.getElementById('totalRevenueDisplayNode');
     if (!display) return;
 
+    console.log('[REVENUE DEBUG] Sales received:', sales.length, 'records');
+    if (sales.length > 0) {
+        console.log('[REVENUE DEBUG] First sale:', { 
+            name: sales[0].product_name, 
+            price_sold: sales[0].price_sold, 
+            qty: sales[0].quantity_sold, 
+            revenue: sales[0].revenue 
+        });
+    }
+
     const total = sales.reduce((sum, s) => {
         let revenue = 0;
 
-        // Try revenue field first (from sales_history)
         if (s.revenue !== undefined && s.revenue !== null) {
             revenue = Number(s.revenue);
-        }
-        // Fallback: calculate from price_sold * quantity_sold
-        else if (s.price_sold !== undefined && s.quantity_sold !== undefined) {
+        } else if (s.price_sold !== undefined && s.quantity_sold !== undefined) {
             revenue = Number(s.price_sold) * Number(s.quantity_sold);
         }
 
-        // Ensure it's a valid number
         if (isNaN(revenue)) revenue = 0;
 
+        console.log('[REVENUE DEBUG] Sale item:', s.product_name, '| revenue:', revenue);
         return sum + revenue;
     }, 0);
 
+    console.log('[REVENUE DEBUG] Total revenue:', total);
     display.textContent = '₱' + total.toFixed(2);
     display.setAttribute('data-raw-revenue', total);
 }
