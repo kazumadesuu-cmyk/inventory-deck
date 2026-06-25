@@ -228,9 +228,10 @@ button.submit-btn:active,
 
 .modal-box {
     background: white;
-    padding: 35px;
-    border-radius: 24px;
-    width: 420px;
+    padding: 24px;
+    border-radius: 20px;
+    width: 400px;
+    max-width: 90vw;
     box-shadow: 0 20px 50px rgba(0,0,0,0.3);
     animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
     transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
@@ -296,9 +297,9 @@ button.submit-btn:active,
 }
 
 .wide-modal-box {
-    width: 90%;
-    max-width: 900px;
-    max-height: 80vh;
+    width: 85%;
+    max-width: 800px;
+    max-height: 75vh;
     overflow-y: auto;
 }
 
@@ -1874,49 +1875,61 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
         padding: 30px 22px;
     }
 
+    .modal-overlay {
+        padding: 8px;
+        align-items: flex-end;
+    }
+
     .wide-modal-box {
-        width: 95%;
-        max-height: 85vh;
-        padding: 16px;
-        border-radius: 16px;
+        width: 96%;
+        max-height: 70vh;
+        padding: 10px;
+        border-radius: 10px;
+        margin: 0 auto;
     }
 
     .wide-modal-box h3 {
-        font-size: 15px;
-        margin-bottom: 12px;
+        font-size: 13px;
+        margin-bottom: 6px;
     }
 
     .popup-table {
-        margin: 10px 0;
-        font-size: 11px;
+        margin: 4px 0;
+        font-size: 9px;
     }
 
     .popup-table th,
     .popup-table td {
-        padding: 5px 6px;
-        font-size: 10px;
+        padding: 3px 4px;
+        font-size: 8px;
+    }
+
+    .popup-table thead th {
+        font-size: 8px;
+        padding: 4px 5px;
     }
 
     .modal-box {
-        padding: 16px;
-        width: 92%;
-        border-radius: 14px;
+        padding: 10px;
+        width: 96%;
+        border-radius: 10px;
     }
 
     .modal-box h3 {
-        font-size: 16px;
-        margin-bottom: 12px;
+        font-size: 13px;
+        margin-bottom: 6px;
     }
 
     .modal-box p {
-        font-size: 12px;
-        margin-bottom: 16px;
+        font-size: 10px;
+        margin-bottom: 8px;
     }
 
     .modal-close-btn {
-        padding: 8px;
-        font-size: 12px;
-        margin-top: 12px;
+        padding: 5px;
+        font-size: 10px;
+        margin-top: 6px;
+        border-radius: 6px;
     }
 
     .focus-split-container {
@@ -1944,6 +1957,11 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 
     .panel-title-bar h3 {
         font-size: 20px;
+    }
+
+    .modal-overlay {
+        padding: 10px;
+        align-items: flex-end;
     }
 
     .add-product-btn {
@@ -2129,20 +2147,25 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     }
 
     .modal-box {
-        padding: 14px;
-        width: 94%;
-        border-radius: 12px;
+        padding: 8px;
+        width: 98%;
+        border-radius: 8px;
     }
 
     .wide-modal-box {
-        width: 96%;
-        max-height: 88vh;
-        padding: 12px;
+        width: 98%;
+        max-height: 75vh;
+        padding: 6px;
     }
 
     .popup-table th,
     .popup-table td {
-        padding: 4px 5px;
+        padding: 2px 3px;
+        font-size: 7px;
+    }
+
+    .modal-close-btn {
+        padding: 4px;
         font-size: 9px;
     }
 

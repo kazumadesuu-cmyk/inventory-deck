@@ -326,10 +326,21 @@ function updateLowStockBanner(lowItems) {
 // ==================== CHROME NOTIFICATIONS (FIXED) ====================
 
 function maybeRequestNotificationPermission() {
-    if (!('Notification' in window)) return;
+    if (!('Notification' in window)) {
+        console.log('Notifications not supported in this browser');
+        return;
+    }
+    console.log('Notification permission status:', Notification.permission);
     if (Notification.permission === 'default' && !localStorage.getItem('notifPromptDismissed')) {
         const modal = document.getElementById('notifPermissionModal');
-        if (modal) modal.style.display = 'flex';
+        if (modal) {
+            modal.style.display = 'flex';
+            console.log('Showing notification permission modal');
+        }
+    } else if (Notification.permission === 'granted') {
+        console.log('Notifications already granted');
+    } else if (Notification.permission === 'denied') {
+        console.log('Notifications denied by user');
     }
 }
 
@@ -401,12 +412,35 @@ window.requestNotifPermission = async function() {
 
     try {
         const permission = await Notification.requestPermission();
+        console.log('Notification permission result:', permission);
         if (permission === 'granted') {
             showToast('Notifications enabled!', 'success');
-            new Notification('Stock Space', {
-                body: 'You will now receive alerts when items run low!',
-                icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png'
-            });
+            // Test notification using SW registration (required for mobile)
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification('Stock Space', {
+                        body: 'You will now receive alerts when items run low!',
+                        icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+                        badge: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+                        tag: 'test-' + Date.now(),
+                        requireInteraction: true
+                    });
+                    console.log('Test notification sent via SW');
+                }).catch(err => {
+                    console.error('Test notification failed:', err);
+                    // Desktop fallback
+                    new Notification('Stock Space', {
+                        body: 'You will now receive alerts when items run low!',
+                        icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png'
+                    });
+                });
+            } else {
+                // Desktop fallback
+                new Notification('Stock Space', {
+                    body: 'You will now receive alerts when items run low!',
+                    icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png'
+                });
+            }
         } else {
             localStorage.setItem('notifPromptDismissed', 'true');
             showToast('Notifications disabled', 'warning');

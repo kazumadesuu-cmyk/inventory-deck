@@ -1,5 +1,21 @@
+// Stock Space Service Worker
+const CACHE_NAME = 'stock-space-v1';
+
+// Install event
+self.addEventListener('install', (event) => {
+  console.log('[SW] Service Worker installing...');
+  self.skipWaiting();
+});
+
+// Activate event
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Service Worker activated');
+  event.waitUntil(self.clients.claim());
+});
+
 // Handle messages from the main page (for phone notifications)
 self.addEventListener('message', (event) => {
+  console.log('[SW] Message received:', event.data);
   if (event.data && event.data.type === 'STOCK_ALERT') {
     const data = event.data;
     const options = {
@@ -13,12 +29,14 @@ self.addEventListener('message', (event) => {
         { action: 'dismiss', title: 'Dismiss' }
       ]
     };
+    console.log('[SW] Showing notification:', data.title);
     self.registration.showNotification(data.title || 'Stock Space Alert', options);
   }
 });
 
 // Handle push notifications for low stock (from server/FCM)
 self.addEventListener('push', (event) => {
+  console.log('[SW] Push event received');
   const data = event.data ? event.data.json() : {};
   const title = data.title || 'Stock Space Alert';
   const options = {
@@ -39,8 +57,9 @@ self.addEventListener('push', (event) => {
 
 // Handle notification actions
 self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] Notification clicked:', event.action);
   event.notification.close();
-  if (event.action === 'view') {
+  if (event.action === 'view' || !event.action) {
     event.waitUntil(
       clients.matchAll({ type: 'window' }).then((clientList) => {
         for (const client of clientList) {
