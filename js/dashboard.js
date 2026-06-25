@@ -1091,8 +1091,12 @@ window.closeCuteModal = function(id) {
 // ==================== SIDEBAR TOGGLE ====================
 window.toggleSidebar = function() {
     const sidebar = document.querySelector('.sidebar-nav');
+    const hamburger = document.querySelector('.hamburger-indicator');
     if (sidebar) {
         sidebar.classList.toggle('open');
+    }
+    if (hamburger) {
+        hamburger.classList.toggle('active');
     }
 };
 
@@ -1108,6 +1112,7 @@ document.addEventListener('click', function(e) {
         const isClickOnHamburger = hamburger.contains(e.target);
         if (!isClickInsideSidebar && !isClickOnHamburger) {
             sidebar.classList.remove('open');
+            hamburger.classList.remove('active');
         }
     }
 });
