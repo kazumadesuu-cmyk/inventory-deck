@@ -13,7 +13,7 @@ body {
 }
 
 body.auth-page {
-    background: linear-gradient(135deg, #fff5f5 0%, #fff0f3 100%);
+    background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%);
     display: flex;
     justify-content: center;
     align-items: center;
