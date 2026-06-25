@@ -252,5 +252,18 @@ if ('serviceWorker' in navigator) {
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="cute-modal-overlay" id="deleteConfirmModal" onclick="if(event.target===this)closeCuteModal('deleteConfirmModal')">
+    <div class="cute-modal-box">
+        <span class="cute-modal-emoji">🗑️</span>
+        <h3 class="cute-modal-title">Delete Product?</h3>
+        <p class="cute-modal-text">Are you sure you want to delete this item? This action cannot be undone.</p>
+        <div class="cute-modal-buttons">
+            <button type="button" class="cute-btn cute-btn-no" onclick="closeCuteModal('deleteConfirmModal')">No, Keep It</button>
+            <button type="button" class="cute-btn cute-btn-delete" onclick="confirmDeleteProduct()">Yes, Delete</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
