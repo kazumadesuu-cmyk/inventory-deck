@@ -53,22 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
-// ==================== NOTIFICATION PERMISSION HANDLER ====================
-function showNotificationPromptIfNeeded() {
-    const dismissed = localStorage.getItem('notifPromptDismissed');
-    const permission = Notification.permission;
-
-    // Only show if not dismissed and permission not yet decided
-    if (!dismissed && permission === 'default') {
-        // Show the modal after a short delay so the user sees the alert first
-        setTimeout(() => {
-            const modal = document.getElementById('notifPermissionModal');
-            if (modal) modal.style.display = 'flex';
-        }, 1500);
-    }
-}
-
 function initializeDashboard() {
     // Real-time product listener
     unsubscribeProducts = subscribeToProducts((newProducts) => {
@@ -292,7 +276,7 @@ window.restockOne = restockOne;
 
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
-    
+
     if (lowItems.length > 0) {
         lowItems.forEach(item => {
             if (!alertedProductIds.has(item.id)) {
@@ -313,46 +297,35 @@ function checkLowStock(productList) {
                 existing.timestamp = new Date().toLocaleString();
             }
         });
-        
+
         renderFloatingAlert(lowItems);
         updateAlertsPanel();
         showLowStockModal(lowItems);
 
-        // Prompt for notification permission if needed
-        showNotificationPromptIfNeeded();
-        
-        const newlyAlerted = lowItems.filter(item => !alertedProductIds.has(item.id));
-        if (Notification.permission === 'granted' && newlyAlerted.length > 0) {
-            const productNames = newlyAlerted.map(item => item.name).join(', ');
-            const totalCount = newlyAlerted.length;
+        // Show notification for all low items (throttled to once per 5 minutes)
+        const now = Date.now();
+        const lastNotifTime = parseInt(localStorage.getItem('lastStockNotifTime') || '0');
+        const fiveMinutes = 5 * 60 * 1000;
+
+        if (Notification.permission === 'granted' && (now - lastNotifTime > fiveMinutes)) {
+            const productNames = lowItems.map(item => item.name).join(', ');
+            const totalCount = lowItems.length;
             new Notification('⚠️ Stock Space Alert', {
                 body: totalCount === 1 
-                    ? `${productNames} is low on stock! Only ${newlyAlerted[0].quantity} left (limit: ${newlyAlerted[0].alert_limit})`
+                    ? `${productNames} is low on stock! Only ${lowItems[0].quantity} left (limit: ${lowItems[0].alert_limit})`
                     : `${totalCount} items are low on stock: ${productNames}`,
                 icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
                 tag: 'stock-alert-batch',
                 requireInteraction: true
             });
+            localStorage.setItem('lastStockNotifTime', now.toString());
         }
-}
-
-}
-
-function showLowStockModal(lowItems) {
-    const list = document.getElementById('lowStockItemsListContainer');
-    if (!list) return;
-    
-    list.innerHTML = lowItems.map(p => `
-        <div class="low-stock-item animate-slide-in">
-            <div class="low-stock-icon">⚠️</div>
-            <div class="low-stock-info">
-                <strong>${escapeHtml(p.name)}</strong>
-                <span>${p.quantity} remaining (limit: ${p.alert_limit})</span>
-            </div>
-        </div>
-    `).join('');
-    
-    document.getElementById('warningModal').style.display = 'flex';
+    } else {
+        // No low stock items - remove the floating alert and clear history
+        removeFloatingAlert();
+        lowStockHistory = [];
+        alertedProductIds.clear();
+    }
 }
 
 function updateSummary(productList) {
@@ -440,7 +413,7 @@ function updateActivityPopup(logs) {
 
     tbody.innerHTML = uniqueLogs.map((log, index) => {
         const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
-        const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
+        const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : log.action_type === 'DELETE' ? '#991b1b' : '#0284c7';
         const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
         return `
         <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
@@ -693,16 +666,19 @@ window.editProduct = function(id) {
 };
 
 window.deleteProductItem = async function(id) {
-    console.log('Delete clicked for product ID:', id);
     const product = products.find(p => p.id === id);
-    if (!product) {
-        console.error('Product not found:', id);
-        return;
-    }
-
+    if (!product) return;
+    
     window.productToDelete = product;
-    console.log('Opening delete modal for:', product.name);
     openCuteModal('deleteConfirmModal');
+    return;
+    
+    try {
+        await deleteProduct(id);
+        showToast(`Deleted ${product.name}`);
+    } catch (err) {
+        showToast('Failed to delete product', 'error');
+    }
 };
 
 window.confirmDeleteProduct = async function() {
@@ -716,6 +692,7 @@ window.confirmDeleteProduct = async function() {
     try {
         console.log('Deleting product:', product.id, product.name);
         await deleteProduct(product.id);
+        addInstantActivity(product.name, 'DELETE', product.quantity || 0, 0);
         showToast(`Deleted ${product.name}`);
         window.productToDelete = null;
     } catch (err) {
@@ -947,7 +924,7 @@ window.renderActivityTable = function(logs, filter = 'ALL') {
 
     tbody.innerHTML = filtered.map((log, index) => {
         const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
-        const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
+        const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : log.action_type === 'DELETE' ? '#991b1b' : '#0284c7';
         const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
         return `
         <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
