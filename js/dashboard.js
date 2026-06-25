@@ -53,6 +53,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+// ==================== NOTIFICATION PERMISSION HANDLER ====================
+function showNotificationPromptIfNeeded() {
+    const dismissed = localStorage.getItem('notifPromptDismissed');
+    const permission = Notification.permission;
+
+    // Only show if not dismissed and permission not yet decided
+    if (!dismissed && permission === 'default') {
+        // Show the modal after a short delay so the user sees the alert first
+        setTimeout(() => {
+            const modal = document.getElementById('notifPermissionModal');
+            if (modal) modal.style.display = 'flex';
+        }, 1500);
+    }
+}
+
 function initializeDashboard() {
     // Real-time product listener
     unsubscribeProducts = subscribeToProducts((newProducts) => {
@@ -301,6 +317,9 @@ function checkLowStock(productList) {
         renderFloatingAlert(lowItems);
         updateAlertsPanel();
         showLowStockModal(lowItems);
+
+        // Prompt for notification permission if needed
+        showNotificationPromptIfNeeded();
         
         const newlyAlerted = lowItems.filter(item => !alertedProductIds.has(item.id));
         if (Notification.permission === 'granted' && newlyAlerted.length > 0) {
@@ -674,32 +693,34 @@ window.editProduct = function(id) {
 };
 
 window.deleteProductItem = async function(id) {
+    console.log('Delete clicked for product ID:', id);
     const product = products.find(p => p.id === id);
-    if (!product) return;
-    
-    window.productToDelete = product;
-    openCuteModal('deleteConfirmModal');
-    return;
-    
-    try {
-        await deleteProduct(id);
-        showToast(`Deleted ${product.name}`);
-    } catch (err) {
-        showToast('Failed to delete product', 'error');
+    if (!product) {
+        console.error('Product not found:', id);
+        return;
     }
+
+    window.productToDelete = product;
+    console.log('Opening delete modal for:', product.name);
+    openCuteModal('deleteConfirmModal');
 };
 
 window.confirmDeleteProduct = async function() {
     const product = window.productToDelete;
-    if (!product) return;
+    if (!product) {
+        console.error('No product to delete');
+        return;
+    }
 
     closeCuteModal('deleteConfirmModal');
     try {
+        console.log('Deleting product:', product.id, product.name);
         await deleteProduct(product.id);
         showToast(`Deleted ${product.name}`);
         window.productToDelete = null;
     } catch (err) {
-        showToast('Failed to delete product', 'error');
+        console.error('Delete failed:', err);
+        showToast('Failed to delete product: ' + err.message, 'error');
     }
 };
 
