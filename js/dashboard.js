@@ -309,22 +309,16 @@ function checkLowStock(productList) {
 }
 
 function updateLowStockBanner(lowItems) {
+    // HIDE the top banner completely - user only wants floating alert at bottom
     const banner = document.getElementById('lowStockBanner');
-    const bannerCount = document.getElementById('lowStockBannerCount');
+    if (banner) {
+        banner.style.display = 'none';
+    }
 
-    if (!banner || !bannerCount) return;
-
+    // Only show/hide the floating alert at bottom right
     if (lowItems.length === 0) {
-        banner.classList.add('closing');
-        setTimeout(() => {
-            banner.style.display = 'none';
-            banner.classList.remove('closing');
-        }, 400);
         removeFloatingAlert();
     } else {
-        banner.classList.remove('closing');
-        banner.style.display = 'block';
-        bannerCount.textContent = `${lowItems.length} item${lowItems.length !== 1 ? 's' : ''}`;
         renderFloatingAlert(lowItems);
     }
 }
