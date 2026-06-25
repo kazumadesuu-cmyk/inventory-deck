@@ -356,6 +356,7 @@ function sendChromeNotification(newlyAlertedItems) {
 
     console.log('Sending notification:', title, body);
 
+    // Method 1: Standard Notification API (works when tab is open)
     try {
         const notification = new Notification(title, {
             body: body,
@@ -372,9 +373,23 @@ function sendChromeNotification(newlyAlertedItems) {
             notification.close();
         };
 
-        console.log('Notification sent successfully');
+        console.log('Desktop notification sent successfully');
     } catch (err) {
-        console.error('Notification error:', err);
+        console.error('Desktop notification error:', err);
+    }
+
+    // Method 2: Service Worker Push (works even when app is closed/minimized)
+    // This is what makes phone notifications work!
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'STOCK_ALERT',
+            title: title,
+            body: body,
+            icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+            badge: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+            tag: 'stock-alert-' + Date.now()
+        });
+        console.log('Service worker push message sent');
     }
 }
 

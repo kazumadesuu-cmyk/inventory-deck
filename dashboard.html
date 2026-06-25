@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="css/style.css">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 <div class="sidebar-nav">
@@ -230,7 +231,7 @@
 <!-- Service Worker Registration for Notifications -->
 <script>
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
+    navigator.serviceWorker.register('./js/sw.js')
         .then(registration => {
             console.log('Service Worker registered:', registration.scope);
         })

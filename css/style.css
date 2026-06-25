@@ -707,6 +707,115 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     width: 100%;
 }
 
+/* Mobile: 3 cards per row */
+@media (max-width: 768px) {
+    .cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .product-card {
+        padding: 10px;
+        border-radius: 14px;
+    }
+
+    .card-title-text {
+        font-size: 12px;
+        margin: 0 0 4px;
+    }
+
+    .card-tag {
+        font-size: 9px;
+        padding: 2px 8px;
+        margin-bottom: 8px;
+    }
+
+    .card-img-holder {
+        height: 70px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+    }
+
+    .stats-infobar {
+        padding: 6px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+    }
+
+    .stat-block .lbl {
+        font-size: 8px;
+    }
+
+    .stat-block .val {
+        font-size: 11px;
+    }
+
+    .button-drawer {
+        gap: 4px;
+    }
+
+    .action-row-pair {
+        gap: 4px;
+    }
+
+    .utility-row {
+        gap: 4px;
+    }
+
+    .btn-action {
+        padding: 5px 4px;
+        font-size: 9px;
+        border-radius: 8px;
+    }
+
+    .status-dot {
+        width: 7px;
+        height: 7px;
+        top: 8px;
+        right: 8px;
+    }
+}
+
+/* Very small screens: 2 cards per row */
+@media (max-width: 480px) {
+    .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .product-card {
+        padding: 8px;
+        border-radius: 12px;
+    }
+
+    .card-title-text {
+        font-size: 11px;
+    }
+
+    .card-tag {
+        font-size: 8px;
+        padding: 2px 6px;
+    }
+
+    .card-img-holder {
+        height: 60px;
+    }
+
+    .stat-block .lbl {
+        font-size: 7px;
+    }
+
+    .stat-block .val {
+        font-size: 10px;
+    }
+
+    .btn-action {
+        padding: 4px 2px;
+        font-size: 8px;
+        border-radius: 6px;
+    }
+}
+
 .empty-view {
     grid-column: 1 / -1;
     text-align: center;
@@ -1650,12 +1759,24 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 768px) {
     .dashboard-wrapper {
-        padding: 16px 14px 16px 70px;
+        padding: 14px 10px 14px 60px;
     }
 
     .sidebar-nav:hover ~ .dashboard-wrapper,
     body:has(.sidebar-nav:hover) .dashboard-wrapper {
-        padding-left: 80px;
+        padding-left: 70px;
+    }
+
+    .sidebar-nav {
+        width: 50px;
+    }
+
+    .sidebar-nav:hover {
+        width: 220px;
+    }
+
+    .sidebar-menu-list {
+        width: 220px;
     }
 
     .header {
@@ -1683,12 +1804,69 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     }
 
     .cards-grid {
-        grid-template-columns: 1fr;
-        gap: 18px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
     }
 
     .product-card {
-        padding: 20px;
+        padding: 10px;
+        border-radius: 14px;
+    }
+
+    .card-title-text {
+        font-size: 12px;
+        margin: 0 0 4px;
+    }
+
+    .card-tag {
+        font-size: 9px;
+        padding: 2px 8px;
+        margin-bottom: 8px;
+    }
+
+    .card-img-holder {
+        height: 70px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+    }
+
+    .stats-infobar {
+        padding: 6px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+    }
+
+    .stat-block .lbl {
+        font-size: 8px;
+    }
+
+    .stat-block .val {
+        font-size: 11px;
+    }
+
+    .button-drawer {
+        gap: 4px;
+    }
+
+    .action-row-pair {
+        gap: 4px;
+    }
+
+    .utility-row {
+        gap: 4px;
+    }
+
+    .btn-action {
+        padding: 5px 4px;
+        font-size: 9px;
+        border-radius: 8px;
+    }
+
+    .status-dot {
+        width: 7px;
+        height: 7px;
+        top: 8px;
+        right: 8px;
     }
 
     .form-container {
@@ -1698,7 +1876,47 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 
     .wide-modal-box {
         width: 95%;
-        max-height: 90vh;
+        max-height: 85vh;
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .wide-modal-box h3 {
+        font-size: 15px;
+        margin-bottom: 12px;
+    }
+
+    .popup-table {
+        margin: 10px 0;
+        font-size: 11px;
+    }
+
+    .popup-table th,
+    .popup-table td {
+        padding: 5px 6px;
+        font-size: 10px;
+    }
+
+    .modal-box {
+        padding: 16px;
+        width: 92%;
+        border-radius: 14px;
+    }
+
+    .modal-box h3 {
+        font-size: 16px;
+        margin-bottom: 12px;
+    }
+
+    .modal-box p {
+        font-size: 12px;
+        margin-bottom: 16px;
+    }
+
+    .modal-close-btn {
+        padding: 8px;
+        font-size: 12px;
+        margin-top: 12px;
     }
 
     .focus-split-container {
@@ -1736,19 +1954,29 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 
 @media (max-width: 480px) {
     .sidebar-nav {
-        width: 50px;
+        width: 40px;
     }
 
     .sidebar-nav:hover {
-        width: 220px;
+        width: 180px;
     }
 
     .sidebar-menu-list {
-        width: 220px;
+        width: 180px;
     }
 
     .dashboard-wrapper {
-        padding: 12px 12px 12px 65px;
+        padding: 10px 6px 10px 48px;
+    }
+
+    .hamburger-indicator {
+        width: 16px;
+        margin: 6px 0 12px 12px;
+        gap: 3px;
+    }
+
+    .hamburger-indicator span {
+        height: 2px;
     }
 
     .header {
@@ -1808,41 +2036,46 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     }
 
     .cards-grid {
-        gap: 16px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
     }
 
     .product-card {
-        padding: 18px;
-        border-radius: 18px;
-    }
-
-    .card-title-text {
-        font-size: 16px;
-    }
-
-    .card-tag {
-        font-size: 11px;
-        padding: 3px 10px;
-    }
-
-    .card-img-holder {
-        height: 140px;
+        padding: 8px;
         border-radius: 12px;
     }
 
-    .stats-infobar {
-        padding: 10px;
+    .card-title-text {
+        font-size: 11px;
+    }
+
+    .card-tag {
+        font-size: 8px;
+        padding: 2px 6px;
+    }
+
+    .card-img-holder {
+        height: 60px;
         border-radius: 10px;
+    }
+
+    .stats-infobar {
+        padding: 6px;
+        border-radius: 8px;
+    }
+
+    .stat-block .lbl {
+        font-size: 7px;
     }
 
     .stat-block .val {
-        font-size: 14px;
+        font-size: 10px;
     }
 
     .btn-action {
-        padding: 8px;
-        font-size: 12px;
-        border-radius: 10px;
+        padding: 4px 2px;
+        font-size: 8px;
+        border-radius: 6px;
     }
 
     .form-container {
@@ -1896,18 +2129,21 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     }
 
     .modal-box {
-        padding: 24px;
-        width: 92%;
+        padding: 14px;
+        width: 94%;
+        border-radius: 12px;
     }
 
     .wide-modal-box {
-        width: 95%;
+        width: 96%;
+        max-height: 88vh;
+        padding: 12px;
     }
 
     .popup-table th,
     .popup-table td {
-        padding: 8px 10px;
-        font-size: 12px;
+        padding: 4px 5px;
+        font-size: 9px;
     }
 
     .focus-split-container {
@@ -1972,22 +2208,33 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 /* ---------- FLOATING ALERT ---------- */
 .floating-alert {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
     z-index: 99999;
     background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 12px 40px rgba(239, 68, 68, 0.2);
+    border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(239, 68, 68, 0.2);
     border-left: 4px solid #ef4444;
-    padding: 16px 20px;
-    min-width: 280px;
+    padding: 12px 16px;
+    min-width: auto;
     animation: slideInRight 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), 
                 transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+}
+
+@media (min-width: 769px) {
+    .floating-alert {
+        bottom: 24px;
+        right: 24px;
+        left: auto;
+        min-width: 280px;
+        padding: 16px 20px;
+    }
 }
 
 .floating-alert:hover {
@@ -2191,6 +2438,28 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     animation: bannerSlideDown 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     transform-origin: top center;
+}
+
+@media (max-width: 768px) {
+    .low-stock-banner {
+        padding: 12px 14px;
+        border-radius: 14px;
+        margin-bottom: 14px;
+    }
+    .low-stock-banner-icon {
+        font-size: 20px;
+    }
+    .low-stock-banner-text {
+        font-size: 12px;
+    }
+    .low-stock-banner-text strong {
+        font-size: 13px;
+    }
+    .low-stock-banner-action {
+        padding: 6px 12px;
+        font-size: 11px;
+        border-radius: 8px;
+    }
 }
 
 @keyframes bannerSlideDown {
