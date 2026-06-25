@@ -37,7 +37,7 @@
     </div>
 
     <!-- Low Stock Warning Banner -->
-    <div id="lowStockBanner" class="low-stock-banner" style="display: none;" onclick="openAlertsPanel()">
+    <div id="lowStockBanner" class="low-stock-banner" style="display: none;" onclick="openAlertsPanel(); requestNotifPermission();">
         <div class="low-stock-banner-content">
             <span class="low-stock-banner-icon">⚠️</span>
             <div class="low-stock-banner-text">
@@ -83,7 +83,8 @@
         <div class="giant-warning-desc">The following products have hit or dropped below their critical alert threshold:</div>
         <div style="margin: 0; width: 100%;">
             <div class="low-stock-list-container" id="lowStockItemsListContainer"></div>
-            <div class="giant-warning-actions-row">
+            <div class="giant-warning-actions-row" style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" class="btn-warning-ignore" id="notifEnableBtn" style="background: #dcfce7; color: #166534; border: 2px solid #22c55e;" onclick="requestNotifPermission()">🔔 Enable Alerts</button>
                 <button type="button" class="btn-warning-ignore" id="warningIgnoreBtn">Dismiss & View Dashboard</button>
             </div>
         </div>

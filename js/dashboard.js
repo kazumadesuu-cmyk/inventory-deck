@@ -53,6 +53,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+// ==================== NOTIFICATION PERMISSION (User Gesture Required) ====================
+window.requestNotifPermission = async function() {
+    if (!('Notification' in window)) {
+        console.log('Browser does not support notifications');
+        return;
+    }
+    if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            showToast('🔔 Notifications enabled!', 'success');
+        }
+    }
+};
+
 function initializeDashboard() {
     // Real-time product listener
     unsubscribeProducts = subscribeToProducts((newProducts) => {
@@ -276,7 +291,7 @@ window.restockOne = restockOne;
 
 function checkLowStock(productList) {
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
-
+    
     if (lowItems.length > 0) {
         lowItems.forEach(item => {
             if (!alertedProductIds.has(item.id)) {
@@ -297,35 +312,43 @@ function checkLowStock(productList) {
                 existing.timestamp = new Date().toLocaleString();
             }
         });
-
+        
         renderFloatingAlert(lowItems);
         updateAlertsPanel();
         showLowStockModal(lowItems);
-
-        // Show notification for all low items (throttled to once per 5 minutes)
-        const now = Date.now();
-        const lastNotifTime = parseInt(localStorage.getItem('lastStockNotifTime') || '0');
-        const fiveMinutes = 5 * 60 * 1000;
-
-        if (Notification.permission === 'granted' && (now - lastNotifTime > fiveMinutes)) {
-            const productNames = lowItems.map(item => item.name).join(', ');
-            const totalCount = lowItems.length;
+        
+        const newlyAlerted = lowItems.filter(item => !alertedProductIds.has(item.id));
+        if (Notification.permission === 'granted' && newlyAlerted.length > 0) {
+            const productNames = newlyAlerted.map(item => item.name).join(', ');
+            const totalCount = newlyAlerted.length;
             new Notification('⚠️ Stock Space Alert', {
                 body: totalCount === 1 
-                    ? `${productNames} is low on stock! Only ${lowItems[0].quantity} left (limit: ${lowItems[0].alert_limit})`
+                    ? `${productNames} is low on stock! Only ${newlyAlerted[0].quantity} left (limit: ${newlyAlerted[0].alert_limit})`
                     : `${totalCount} items are low on stock: ${productNames}`,
                 icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
                 tag: 'stock-alert-batch',
                 requireInteraction: true
             });
-            localStorage.setItem('lastStockNotifTime', now.toString());
         }
-    } else {
-        // No low stock items - remove the floating alert and clear history
-        removeFloatingAlert();
-        lowStockHistory = [];
-        alertedProductIds.clear();
-    }
+}
+
+}
+
+function showLowStockModal(lowItems) {
+    const list = document.getElementById('lowStockItemsListContainer');
+    if (!list) return;
+    
+    list.innerHTML = lowItems.map(p => `
+        <div class="low-stock-item animate-slide-in">
+            <div class="low-stock-icon">⚠️</div>
+            <div class="low-stock-info">
+                <strong>${escapeHtml(p.name)}</strong>
+                <span>${p.quantity} remaining (limit: ${p.alert_limit})</span>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('warningModal').style.display = 'flex';
 }
 
 function updateSummary(productList) {
