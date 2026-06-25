@@ -1087,3 +1087,27 @@ window.closeCuteModal = function(id) {
     const modal = document.getElementById(id);
     if (modal) modal.classList.remove('active');
 };
+
+// ==================== SIDEBAR TOGGLE ====================
+window.toggleSidebar = function() {
+    const sidebar = document.querySelector('.sidebar-nav');
+    if (sidebar) {
+        sidebar.classList.toggle('open');
+    }
+};
+
+// Close sidebar when clicking outside
+document.addEventListener('click', function(e) {
+    const sidebar = document.querySelector('.sidebar-nav');
+    const hamburger = document.querySelector('.hamburger-indicator');
+    if (!sidebar || !hamburger) return;
+
+    // If sidebar is open and click is outside sidebar and not on hamburger
+    if (sidebar.classList.contains('open')) {
+        const isClickInsideSidebar = sidebar.contains(e.target);
+        const isClickOnHamburger = hamburger.contains(e.target);
+        if (!isClickInsideSidebar && !isClickOnHamburger) {
+            sidebar.classList.remove('open');
+        }
+    }
+});
