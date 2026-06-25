@@ -432,32 +432,30 @@ function updateTotalRevenue(sales) {
     const display = document.getElementById('totalRevenueDisplayNode');
     if (!display) return;
 
-    console.log('[REVENUE DEBUG] Sales received:', sales.length, 'records');
-    if (sales.length > 0) {
-        console.log('[REVENUE DEBUG] First sale:', { 
-            name: sales[0].product_name, 
-            price_sold: sales[0].price_sold, 
-            qty: sales[0].quantity_sold, 
-            revenue: sales[0].revenue 
-        });
-    }
-
-    const total = sales.reduce((sum, s) => {
+    // BULLETPROOF: Force sum to stay a number, never a string
+    let total = 0;
+    for (const s of sales) {
         let revenue = 0;
 
+        // Try revenue field first
         if (s.revenue !== undefined && s.revenue !== null) {
             revenue = Number(s.revenue);
-        } else if (s.price_sold !== undefined && s.quantity_sold !== undefined) {
+        } 
+        // Fallback: price_sold * quantity_sold
+        else if (s.price_sold !== undefined && s.quantity_sold !== undefined) {
             revenue = Number(s.price_sold) * Number(s.quantity_sold);
         }
 
+        // Guard against NaN
         if (isNaN(revenue)) revenue = 0;
 
-        console.log('[REVENUE DEBUG] Sale item:', s.product_name, '| revenue:', revenue);
-        return sum + revenue;
-    }, 0);
+        total = total + revenue;  // explicit: number + number
+    }
 
-    console.log('[REVENUE DEBUG] Total revenue:', total);
+    // Final guard
+    if (isNaN(total)) total = 0;
+
+    console.log('[REVENUE] Total calculated:', total, 'from', sales.length, 'sales');
     display.textContent = '₱' + total.toFixed(2);
     display.setAttribute('data-raw-revenue', total);
 }
