@@ -53,21 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
-// ==================== NOTIFICATION PERMISSION (User Gesture Required) ====================
-window.requestNotifPermission = async function() {
-    if (!('Notification' in window)) {
-        console.log('Browser does not support notifications');
-        return;
-    }
-    if (Notification.permission === 'default') {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            showToast('🔔 Notifications enabled!', 'success');
-        }
-    }
-};
-
 function initializeDashboard() {
     // Real-time product listener
     unsubscribeProducts = subscribeToProducts((newProducts) => {
@@ -436,7 +421,7 @@ function updateActivityPopup(logs) {
 
     tbody.innerHTML = uniqueLogs.map((log, index) => {
         const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
-        const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : log.action_type === 'DELETE' ? '#991b1b' : '#0284c7';
+        const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
         const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
         return `
         <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
@@ -706,21 +691,15 @@ window.deleteProductItem = async function(id) {
 
 window.confirmDeleteProduct = async function() {
     const product = window.productToDelete;
-    if (!product) {
-        console.error('No product to delete');
-        return;
-    }
+    if (!product) return;
 
     closeCuteModal('deleteConfirmModal');
     try {
-        console.log('Deleting product:', product.id, product.name);
         await deleteProduct(product.id);
-        addInstantActivity(product.name, 'DELETE', product.quantity || 0, 0);
         showToast(`Deleted ${product.name}`);
         window.productToDelete = null;
     } catch (err) {
-        console.error('Delete failed:', err);
-        showToast('Failed to delete product: ' + err.message, 'error');
+        showToast('Failed to delete product', 'error');
     }
 };
 
@@ -947,7 +926,7 @@ window.renderActivityTable = function(logs, filter = 'ALL') {
 
     tbody.innerHTML = filtered.map((log, index) => {
         const date = log.created_at ? (typeof log.created_at.toDate === 'function' ? new Date(log.created_at.toDate()) : new Date(log.created_at)).toLocaleString() : 'N/A';
-        const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : log.action_type === 'DELETE' ? '#991b1b' : '#0284c7';
+        const actionColor = log.action_type === 'SELL' ? '#ef4444' : log.action_type === 'RESTOCK' ? '#22c55e' : '#0284c7';
         const revenueText = log.revenue > 0 ? `<span style="color: #22c55e; font-weight: 700;">₱${log.revenue.toFixed(2)}</span>` : '<span style="color: #94a3b8;">—</span>';
         return `
         <tr class="animate-fade-in" style="animation-delay: ${index * 0.05}s">
