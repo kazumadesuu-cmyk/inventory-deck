@@ -2767,3 +2767,151 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     50% { transform: translateY(0) rotate(0deg); }
     75% { transform: translateY(-4px) rotate(5deg); }
 }
+
+/* ========== ULTRA COMPACT MOBILE MODALS ========== */
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 4px;
+        align-items: flex-end;
+        background: rgba(15, 23, 42, 0.7);
+    }
+
+    .modal-box, .wide-modal-box {
+        width: 98%;
+        max-width: 98%;
+        max-height: 65vh;
+        padding: 8px;
+        border-radius: 8px;
+        margin: 0 auto 8px;
+    }
+
+    .modal-box h3, .wide-modal-box h3 {
+        font-size: 12px;
+        margin-bottom: 4px;
+        margin-top: 0;
+    }
+
+    .modal-box p {
+        font-size: 9px;
+        margin-bottom: 6px;
+        line-height: 1.4;
+    }
+
+    .popup-table {
+        margin: 4px 0;
+        font-size: 8px;
+    }
+
+    .popup-table th {
+        padding: 3px 4px;
+        font-size: 7px;
+    }
+
+    .popup-table td {
+        padding: 3px 4px;
+        font-size: 8px;
+    }
+
+    .modal-close-btn {
+        padding: 4px;
+        font-size: 9px;
+        margin-top: 4px;
+        border-radius: 6px;
+    }
+
+    /* Activity tabs smaller */
+    .activity-filter-tabs {
+        gap: 3px;
+        padding: 2px;
+        margin-bottom: 8px;
+    }
+
+    .activity-tab {
+        padding: 4px 6px;
+        font-size: 9px;
+    }
+
+    /* Focus modal */
+    .focus-modal-box {
+        max-height: 70vh;
+    }
+
+    .focus-left-side, .focus-right-side {
+        padding: 10px;
+    }
+
+    .big-quantity-input {
+        padding: 8px;
+        font-size: 14px;
+        margin: 6px 0 10px;
+    }
+
+    .toggle-tab-row {
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+
+    .tab-btn {
+        padding: 6px;
+        font-size: 10px;
+    }
+
+    /* Giant warning box */
+    .giant-warning-box {
+        padding: 16px;
+        max-width: 95%;
+    }
+
+    .giant-warning-title {
+        font-size: 16px;
+    }
+
+    .giant-warning-desc {
+        font-size: 11px;
+    }
+
+    .low-stock-item {
+        padding: 8px;
+        margin-bottom: 6px;
+    }
+
+    .low-stock-icon {
+        font-size: 16px;
+    }
+
+    .low-stock-info strong {
+        font-size: 11px;
+    }
+
+    .low-stock-info span {
+        font-size: 9px;
+    }
+
+    .btn-warning-ignore {
+        padding: 8px 14px;
+        font-size: 10px;
+    }
+}
+
+/* Even smaller for tiny phones */
+@media (max-width: 380px) {
+    .modal-box, .wide-modal-box {
+        padding: 6px;
+        border-radius: 6px;
+        max-height: 60vh;
+    }
+
+    .modal-box h3, .wide-modal-box h3 {
+        font-size: 11px;
+    }
+
+    .popup-table th, .popup-table td {
+        padding: 2px 3px;
+        font-size: 7px;
+    }
+
+    .modal-close-btn {
+        padding: 3px;
+        font-size: 8px;
+    }
+}
