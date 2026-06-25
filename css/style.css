@@ -2768,150 +2768,169 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     75% { transform: translateY(-4px) rotate(5deg); }
 }
 
-/* ========== ULTRA COMPACT MOBILE MODALS ========== */
+
+
+/* ========== FINAL MOBILE MODAL OVERRIDE ========== */
 @media (max-width: 768px) {
     .modal-overlay {
-        padding: 4px;
-        align-items: flex-end;
-        background: rgba(15, 23, 42, 0.7);
+        padding: 16px !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
-    .modal-box, .wide-modal-box {
-        width: 98%;
-        max-width: 98%;
-        max-height: 65vh;
-        padding: 8px;
-        border-radius: 8px;
-        margin: 0 auto 8px;
+    .modal-box {
+        width: 85% !important;
+        max-width: 340px !important;
+        max-height: 55vh !important;
+        padding: 14px !important;
+        border-radius: 14px !important;
+        margin: auto !important;
     }
 
-    .modal-box h3, .wide-modal-box h3 {
-        font-size: 12px;
-        margin-bottom: 4px;
-        margin-top: 0;
+    .wide-modal-box {
+        width: 92% !important;
+        max-width: 92% !important;
+        max-height: 60vh !important;
+        padding: 12px !important;
+        border-radius: 12px !important;
+        margin: auto !important;
+    }
+
+    .modal-box h3,
+    .wide-modal-box h3 {
+        font-size: 13px !important;
+        margin-bottom: 6px !important;
+        margin-top: 0 !important;
     }
 
     .modal-box p {
-        font-size: 9px;
-        margin-bottom: 6px;
-        line-height: 1.4;
+        font-size: 10px !important;
+        margin-bottom: 8px !important;
     }
 
     .popup-table {
-        margin: 4px 0;
-        font-size: 8px;
+        margin: 6px 0 !important;
     }
 
     .popup-table th {
-        padding: 3px 4px;
-        font-size: 7px;
+        padding: 4px 6px !important;
+        font-size: 8px !important;
     }
 
     .popup-table td {
-        padding: 3px 4px;
-        font-size: 8px;
+        padding: 4px 6px !important;
+        font-size: 9px !important;
     }
 
     .modal-close-btn {
-        padding: 4px;
-        font-size: 9px;
-        margin-top: 4px;
-        border-radius: 6px;
+        padding: 6px !important;
+        font-size: 10px !important;
+        margin-top: 6px !important;
+        border-radius: 8px !important;
     }
 
-    /* Activity tabs smaller */
     .activity-filter-tabs {
-        gap: 3px;
-        padding: 2px;
-        margin-bottom: 8px;
+        gap: 4px !important;
+        padding: 3px !important;
+        margin-bottom: 10px !important;
     }
 
     .activity-tab {
-        padding: 4px 6px;
-        font-size: 9px;
+        padding: 5px 8px !important;
+        font-size: 9px !important;
     }
 
-    /* Focus modal */
     .focus-modal-box {
-        max-height: 70vh;
+        max-height: 65vh !important;
     }
 
-    .focus-left-side, .focus-right-side {
-        padding: 10px;
+    .focus-left-side,
+    .focus-right-side {
+        padding: 12px !important;
     }
 
     .big-quantity-input {
-        padding: 8px;
-        font-size: 14px;
-        margin: 6px 0 10px;
+        padding: 10px !important;
+        font-size: 15px !important;
+        margin: 8px 0 12px !important;
     }
 
     .toggle-tab-row {
-        gap: 4px;
-        margin-bottom: 8px;
+        gap: 6px !important;
+        margin-bottom: 10px !important;
     }
 
     .tab-btn {
-        padding: 6px;
-        font-size: 10px;
+        padding: 8px !important;
+        font-size: 11px !important;
     }
 
-    /* Giant warning box */
     .giant-warning-box {
-        padding: 16px;
-        max-width: 95%;
+        padding: 18px !important;
+        max-width: 90% !important;
     }
 
     .giant-warning-title {
-        font-size: 16px;
+        font-size: 16px !important;
     }
 
     .giant-warning-desc {
-        font-size: 11px;
+        font-size: 11px !important;
     }
 
     .low-stock-item {
-        padding: 8px;
-        margin-bottom: 6px;
+        padding: 8px !important;
+        margin-bottom: 6px !important;
     }
 
     .low-stock-icon {
-        font-size: 16px;
+        font-size: 18px !important;
     }
 
     .low-stock-info strong {
-        font-size: 11px;
+        font-size: 12px !important;
     }
 
     .low-stock-info span {
-        font-size: 9px;
+        font-size: 10px !important;
     }
 
     .btn-warning-ignore {
-        padding: 8px 14px;
-        font-size: 10px;
+        padding: 8px 16px !important;
+        font-size: 11px !important;
     }
 }
 
-/* Even smaller for tiny phones */
-@media (max-width: 380px) {
-    .modal-box, .wide-modal-box {
-        padding: 6px;
-        border-radius: 6px;
-        max-height: 60vh;
+@media (max-width: 480px) {
+    .modal-box {
+        width: 90% !important;
+        max-width: 90% !important;
+        max-height: 50vh !important;
+        padding: 10px !important;
+        border-radius: 10px !important;
     }
 
-    .modal-box h3, .wide-modal-box h3 {
-        font-size: 11px;
+    .wide-modal-box {
+        width: 95% !important;
+        max-width: 95% !important;
+        max-height: 55vh !important;
+        padding: 8px !important;
+        border-radius: 10px !important;
     }
 
-    .popup-table th, .popup-table td {
-        padding: 2px 3px;
-        font-size: 7px;
+    .modal-box h3,
+    .wide-modal-box h3 {
+        font-size: 12px !important;
+    }
+
+    .popup-table th,
+    .popup-table td {
+        padding: 3px 4px !important;
+        font-size: 8px !important;
     }
 
     .modal-close-btn {
-        padding: 3px;
-        font-size: 8px;
+        padding: 5px !important;
+        font-size: 9px !important;
     }
 }
