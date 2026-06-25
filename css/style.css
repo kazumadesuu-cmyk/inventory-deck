@@ -1650,27 +1650,50 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 768px) {
     .dashboard-wrapper {
-        padding: 20px 16px 20px 80px;
+        padding: 16px 14px 16px 70px;
     }
 
     .sidebar-nav:hover ~ .dashboard-wrapper,
     body:has(.sidebar-nav:hover) .dashboard-wrapper {
-        padding-left: 90px;
+        padding-left: 80px;
     }
 
     .header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
+        flex-direction: row;
+        gap: 12px;
+        align-items: center;
+        padding: 16px 20px;
+    }
+
+    .header h2 {
+        font-size: 18px;
+    }
+
+    .summary-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+    }
+
+    .metric-card {
+        padding: 20px;
+    }
+
+    .metric-card p {
+        font-size: 24px;
     }
 
     .cards-grid {
         grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .product-card {
+        padding: 20px;
     }
 
     .form-container {
         width: 90%;
-        padding: 35px 25px;
+        padding: 30px 22px;
     }
 
     .wide-modal-box {
@@ -1684,6 +1707,10 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
     .focus-left-side {
         border-right: none;
         border-bottom: 1px solid #f1f5f9;
+        padding: 24px;
+    }
+    .focus-right-side {
+        padding: 24px;
     }
 
     table, .popup-table {
@@ -1696,32 +1723,249 @@ body:has(.sidebar-nav:hover) .dashboard-wrapper {
         width: 100%;
         right: -100%;
     }
+
+    .panel-title-bar h3 {
+        font-size: 20px;
+    }
+
+    .add-product-btn {
+        padding: 11px 20px;
+        font-size: 13px;
+    }
 }
 
 @media (max-width: 480px) {
     .sidebar-nav {
-        width: 60px;
+        width: 50px;
     }
 
     .sidebar-nav:hover {
-        width: 240px;
+        width: 220px;
     }
 
     .sidebar-menu-list {
-        width: 240px;
+        width: 220px;
     }
 
     .dashboard-wrapper {
-        padding-left: 75px;
+        padding: 12px 12px 12px 65px;
+    }
+
+    .header {
+        padding: 14px 18px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+    }
+
+    .header h2 {
+        font-size: 16px;
+    }
+
+    .header-title-area {
+        gap: 8px;
+    }
+
+    .logout-btn {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+
+    .network-status-badge {
+        padding: 4px 10px;
+        font-size: 10px;
+    }
+
+    .summary-container {
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .metric-card {
+        padding: 18px;
+        border-radius: 16px;
+    }
+
+    .metric-card h4 {
+        font-size: 11px;
     }
 
     .metric-card p {
-        font-size: 26px;
+        font-size: 22px;
+    }
+
+    .panel-title-bar {
+        margin-bottom: 16px;
+    }
+
+    .panel-title-bar h3 {
+        font-size: 18px;
+    }
+
+    .add-product-btn {
+        padding: 10px 18px;
+        font-size: 13px;
+        border-radius: 12px;
+    }
+
+    .cards-grid {
+        gap: 16px;
+    }
+
+    .product-card {
+        padding: 18px;
+        border-radius: 18px;
+    }
+
+    .card-title-text {
+        font-size: 16px;
+    }
+
+    .card-tag {
+        font-size: 11px;
+        padding: 3px 10px;
+    }
+
+    .card-img-holder {
+        height: 140px;
+        border-radius: 12px;
+    }
+
+    .stats-infobar {
+        padding: 10px;
+        border-radius: 10px;
+    }
+
+    .stat-block .val {
+        font-size: 14px;
+    }
+
+    .btn-action {
+        padding: 8px;
+        font-size: 12px;
+        border-radius: 10px;
     }
 
     .form-container {
-        padding: 30px 20px;
+        padding: 24px 16px;
+        width: 92%;
+    }
+
+    .form-container h2 {
+        font-size: 22px;
+    }
+
+    .form-container .subtitle {
+        font-size: 13px;
+        margin-bottom: 20px;
+    }
+
+    .auth-page input {
+        padding: 12px;
+        font-size: 14px;
+    }
+
+    button.submit-btn,
+    .form-container button[type="submit"] {
+        padding: 14px;
+        font-size: 15px;
+    }
+
+    .reg-btn {
+        padding: 12px;
+        font-size: 14px;
+    }
+
+    .hamburger-indicator {
+        width: 20px;
+        margin: 8px 0 18px 15px;
+    }
+
+    .sidebar-menu-item {
+        padding: 10px 18px;
+        font-size: 13px;
+    }
+
+    .sidebar-menu-item.sub-node {
+        padding-left: 34px;
+        font-size: 12px;
+    }
+
+    .alerts-panel {
+        width: 100%;
+        right: -100%;
+    }
+
+    .modal-box {
+        padding: 24px;
+        width: 92%;
+    }
+
+    .wide-modal-box {
         width: 95%;
+    }
+
+    .popup-table th,
+    .popup-table td {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    .focus-split-container {
+        grid-template-columns: 1fr;
+    }
+
+    .focus-left-side {
+        border-right: none;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 20px;
+    }
+
+    .focus-right-side {
+        padding: 20px;
+    }
+
+    .big-quantity-input {
+        padding: 12px;
+        font-size: 18px;
+    }
+
+    .toggle-tab-row {
+        gap: 6px;
+    }
+
+    .tab-btn {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    .cute-modal-box {
+        padding: 32px 24px;
+    }
+
+    .cute-modal-emoji {
+        font-size: 48px;
+    }
+
+    .cute-modal-title {
+        font-size: 20px;
+    }
+
+    .cute-btn {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+
+    .floating-alert {
+        padding: 12px 16px;
+        min-width: 220px;
+    }
+
+    .floating-alert-icon {
+        font-size: 18px;
+    }
+
+    .floating-alert-text {
+        font-size: 13px;
     }
 }
 
