@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Inventory Deck</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+<base target="_blank">
+<base target="_blank">
+</head>
+<body>
+<div class="sidebar-nav">
+    <div class="hamburger-indicator"><span></span><span></span><span></span></div>
+    <nav class="sidebar-menu-list">
+        <a href="#dashboard" class="sidebar-menu-item main-node">Dashboard</a>
+        <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openPopupModal('productsPopup'); return false;">Inventory summary</a>
+        <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openAlertsPanel(); return false;">Low-stock alerts</a>
+        <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openPopupModal('recentActivityLogBookPopup'); return false;">Recent activity</a>
+        <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openPopupModal('stockAlertHistoryPopup'); return false;">Alert history</a>
+        <a href="#products" class="sidebar-menu-item main-node">Products / Items</a>
+        <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openPopupModal('productsPopup'); return false;">Product list</a>
+        <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openAddModal(); return false;">Add product</a>
+        <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openCategoryModeModal(); return false;">Categories</a>
+    </nav>
+</div>
+<div class="dashboard-wrapper">
+    <div class="header">
+        <div class="header-title-area">
+            <h2>Stock Space <span id="userDisplay">(User)</span></h2>
+            <div id="networkStatusBadge" class="network-status-badge online">Online</div>
+        </div>
+        <div class="header-actions-area">
+            <button id="logoutBtn" class="logout-btn">Logout</button>
+        </div>
+    </div>
+
+    <!-- Low Stock Warning Banner -->
+    <div id="lowStockBanner" class="low-stock-banner" style="display: none;" onclick="openAlertsPanel()">
+        <div class="low-stock-banner-content">
+            <span class="low-stock-banner-icon">⚠️</span>
+            <div class="low-stock-banner-text">
+                <strong id="lowStockBannerCount">0 items</strong> running low on stock
+            </div>
+            <span class="low-stock-banner-action">View Details →</span>
+        </div>
+        <div class="low-stock-banner-pulse"></div>
+    </div>
+
+    <div class="summary-container">
+        <div class="metric-card clickable-card" onclick="openPopupModal('productsPopup')">
+            <h4>Total Products</h4><p id="totalProductsCount">0</p>
+        </div>
+        <div class="metric-card clickable-card" onclick="openPopupModal('revenuePopup')">
+            <h4>Total Revenue</h4><p id="totalRevenueDisplayNode" data-raw-revenue="0">₱0.00</p>
+        </div>
+    </div>
+    <div class="panel-title-bar">
+        <h3>Inventory Deck</h3>
+        <button class="add-product-btn" onclick="openAddModal()">Add Product</button>
+    </div>
+    <div class="cards-grid" id="cardsGrid">
+        <div class="empty-view">Your inventory deck is empty. Tap add to start!</div>
+    </div>
+</div>
+
+<!-- Low Stock Alerts Panel (Sidebar) -->
+<div class="alerts-panel" id="alertsPanel">
+    <div class="alerts-panel-header">
+        <h3>⚠️ Low Stock Alerts</h3>
+        <button class="alerts-panel-close" onclick="closeAlertsPanel()">×</button>
+    </div>
+    <div class="alerts-panel-content" id="alertsPanelContent">
+        <div class="alerts-empty">No low stock alerts</div>
+    </div>
+</div>
+
+<div class="stock-alerts-drawer" id="ignoredAlertsContainer"></div>
+<div class="modal-overlay" id="warningModal">
+    <div class="giant-warning-box modal-box">
+        <div class="giant-warning-title">Stock Level Alerts</div>
+        <div class="giant-warning-desc">The following products have hit or dropped below their critical alert threshold:</div>
+        <div style="margin: 0; width: 100%;">
+            <div class="low-stock-list-container" id="lowStockItemsListContainer"></div>
+            <div class="giant-warning-actions-row">
+                <button type="button" class="btn-warning-ignore" id="warningIgnoreBtn">Dismiss & View Dashboard</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="focusModal" onclick="closePopupModalOnBackground(event, 'focusModal')">
+    <div class="focus-modal-box modal-box" id="focusCardWrapper">
+        <div style="text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 12px; margin-bottom: 5px;">
+            <h3 id="focusTitle" style="font-size: 30px; margin: 0; color: #0f172a; font-weight: 700;">Product Name</h3>
+            <span id="focusCategory" class="card-tag" style="font-size: 15px; margin: 6px 0 0 0;">Category</span>
+        </div>
+        <div class="focus-split-container">
+            <div class="focus-left-side">
+                <div class="card-img-holder"><img id="focusImage" src="" alt="Zoom Preview" onerror="this.src='https://cdn-icons-png.flaticon.com/512/679/679720.png'"></div>
+                <div class="stats-infobar" style="background: #ffffff; border: 1px solid #cbd5e1; padding: 16px 0; margin: 0 0 15px 0;">
+                    <div class="stat-block"><span class="lbl" style="font-size: 12px;">Unit Price</span><span class="val" id="focusPrice" style="color: #0284c7; font-size: 18px;">₱0.00</span></div>
+                    <div class="stat-block"><span class="lbl" style="font-size: 12px;">In Stock</span><span class="val" id="focusStock" style="font-size: 18px;">0</span></div>
+                </div>
+                <div class="action-row-pair">
+                    <a href="#" id="focus_modal_sell_link" class="btn-action btn-sell" onclick="handleFocusQuickSell(event)">Sold (-1)</a>
+                    <a href="#" id="focus_modal_restock_link" class="btn-action btn-restock" onclick="handleFocusQuickRestock(event)">Restock (+1)</a>
+                </div>
+            </div>
+            <div class="focus-right-side">
+                <form id="bundleActionForm" style="margin: 0; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                    <div>
+                        <div class="toggle-tab-row">
+                            <button type="button" class="tab-btn active-tab" id="tabSellModeBtn" onclick="switchFocusFormConsoleMode('SELL')">Log Sale</button>
+                            <button type="button" class="tab-btn" id="tabRestockModeBtn" onclick="switchFocusFormConsoleMode('RESTOCK')">Log Restock</button>
+                        </div>
+                        <label id="inputFormBoxDynamicLabel" style="font-size: 14px; font-weight: bold; color: #334155; display: block; margin-bottom: 6px; text-align: center;">How many items are you distributing?</label>
+                        <input type="number" id="focus_quantity_input" value="1" min="1" class="big-quantity-input" oninput="updateLivePrice()" required>
+                    </div>
+                    <div id="valuationContainerCard" style="background: #ffffff; padding: 18px; border-radius: 16px; border: 2px solid #bae6fd; text-align: center; margin: 15px 0;">
+                        <span id="valuationDynamicTitle" style="font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; display: block; letter-spacing: 0.5px;">Gross Projected Income</span>
+                        <span id="bulkTotalDisplay" style="font-size: 32px; font-weight: 900; color: #22c55e; display: block; margin-top: 6px;">₱0.00</span>
+                    </div>
+                    <button type="button" id="mainConsoleActionButton" class="add-product-btn" style="background: #ef4444; width: 100%; padding: 16px; font-size: 16px; box-shadow: 0 6px 16px rgba(239, 68, 68, 0.25); border:none; border-radius:14px; color:white; font-weight:bold; cursor:pointer;" onclick="handleBundleAction()">Confirm Sale Bundle</button>
+                </form>
+            </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closePopupModal('focusModal')">Close View</button>
+    </div>
+</div>
+<div class="modal-overlay" id="productsPopup" onclick="closePopupModalOnBackground(event, 'productsPopup')">
+    <div class="modal-box wide-modal-box">
+        <h3>Current Stock List Overview</h3>
+        <table class="popup-table">
+            <thead><tr><th>Product Name</th><th>Category</th><th>Unit Price</th><th>Available Stock</th></tr></thead>
+            <tbody id="productsPopupBody"><tr><td colspan="4" style="text-align:center; color:#64748b; padding: 24px;">No items registered.</td></tr></tbody>
+        </table>
+        <button type="button" class="modal-close-btn" onclick="closePopupModal('productsPopup')">Close Screen</button>
+    </div>
+</div>
+<div class="modal-overlay" id="revenuePopup" onclick="closePopupModalOnBackground(event, 'revenuePopup')">
+    <div class="modal-box wide-modal-box">
+        <h3>Sales History Log Ledger</h3>
+        <table class="popup-table">
+            <thead><tr><th>Item Traded</th><th>Category Type</th><th>Volume</th><th>Revenue Capitalized</th><th>Timestamp Record</th></tr></thead>
+            <tbody id="revenueModalTableBody"><tr id="revenueEmptyStatePlaceholderRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No items sold on this profile yet.</td></tr></tbody>
+        </table>
+        <button type="button" class="modal-close-btn" onclick="closePopupModal('revenuePopup')">Close Screen</button>
+    </div>
+</div>
+<div class="modal-overlay" id="recentActivityLogBookPopup" onclick="closePopupModalOnBackground(event, 'recentActivityLogBookPopup')">
+    <div class="modal-box wide-modal-box">
+        <h3>📋 Recent Activity Log</h3>
+        <div class="activity-filter-tabs">
+            <button type="button" class="activity-tab active" onclick="window.filterActivityLog('ALL', this)">All</button>
+            <button type="button" class="activity-tab" onclick="window.filterActivityLog('SELL', this)">💰 Sold</button>
+            <button type="button" class="activity-tab" onclick="window.filterActivityLog('RESTOCK', this)">📦 Restock</button>
+            <button type="button" class="activity-tab" onclick="window.filterActivityLog('ADD', this)">➕ Add</button>
+        </div>
+        <table class="popup-table">
+            <thead><tr><th>Time</th><th>Product</th><th>Action</th><th>Qty</th><th>Revenue</th></tr></thead>
+            <tbody id="auditLogBookTableBody"><tr id="activityEmptyRow"><td colspan="5" style="text-align:center; color:#64748b; padding: 24px;">No activity recorded yet.</td></tr></tbody>
+        </table>
+        <button type="button" class="modal-close-btn" onclick="closePopupModal('recentActivityLogBookPopup')">Close Log Book</button>
+    </div>
+</div>
+<div class="modal-overlay" id="stockAlertHistoryPopup" onclick="closePopupModalOnBackground(event, 'stockAlertHistoryPopup')">
+    <div class="modal-box wide-modal-box">
+        <h3>🚨 Stock Alert History</h3>
+        <table class="popup-table">
+            <thead><tr><th>Time</th><th>Product</th><th>Stock Left</th><th>Alert Limit</th></tr></thead>
+            <tbody id="alertsHistoryTableBody"><tr><td colspan="4" style="text-align:center; color:#64748b; padding: 24px;">No stock alerts recorded yet.</td></tr></tbody>
+        </table>
+        <button type="button" class="modal-close-btn" onclick="closePopupModal('stockAlertHistoryPopup')">Close History</button>
+    </div>
+</div>
+<div class="modal-overlay" id="categoryModePopup" onclick="closePopupModalOnBackground(event, 'categoryModePopup')">
+    <div class="modal-box wide-modal-box">
+        <h3>Inventory Sorted by Categories</h3>
+        <div id="categoryModeContainer" style="margin-top: 15px;"></div>
+        <button type="button" class="modal-close-btn" onclick="closePopupModal('categoryModePopup')">Close Screen</button>
+    </div>
+</div>
+<div class="modal-overlay" id="productModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">Add Product</h3>
+        <form id="modalForm">
+            <input type="hidden" id="form_product_id">
+            <label class="form-label">Item Name</label>
+            <input type="text" id="form_name" placeholder="e.g. Burger" required>
+            <label class="form-label">Category</label>
+            <input type="text" id="form_category" list="category_suggestions" placeholder="e.g. Food" required>
+            <datalist id="category_suggestions">
+                <option value="Baked Goods">
+                <option value="Meals / Appetizers">
+                <option value="Artisan Crafts">
+                <option value="Handmade Jewelry">
+                <option value="Custom Prints">
+            </datalist>
+            <label class="form-label">Price (₱)</label>
+            <input type="number" id="form_price" placeholder="e.g. 150" step="0.01" min="0" required>
+            <label class="form-label">Initial Quantity</label>
+            <div id="qty_input_wrapper"><input type="number" id="form_quantity" placeholder="How many in stock?" min="0" value="0"></div>
+            <label class="form-label">Stock Alert Limit</label>
+            <input type="number" id="form_alert_limit" placeholder="Alert when stock drops to?" min="0" value="5" required>
+            <div style="margin-top:8px;"><input type="file" id="form_image" accept="image/*" style="border:none; background:none;"></div>
+            <button type="submit" class="add-product-btn" style="width:100%; margin-top:15px; padding:12px; color:white; border:none; font-weight:bold; cursor:pointer; border-radius:12px;">Save Details</button>
+            <button type="button" class="modal-close-btn" onclick="closeModal()">Cancel</button>
+        </form>
+    </div>
+</div>
+<script type="module" src="js/dashboard.js"></script>
+
+<!-- Logout Confirmation Modal -->
+<div class="cute-modal-overlay" id="logoutConfirmModal" onclick="if(event.target===this)closeCuteModal('logoutConfirmModal')">
+    <div class="cute-modal-box">
+        <span class="cute-modal-emoji">👋</span>
+        <h3 class="cute-modal-title">See you soon!</h3>
+        <p class="cute-modal-text">Are you sure you want to log out of Stock Space?</p>
+        <div class="cute-modal-buttons">
+            <button type="button" class="cute-btn cute-btn-no" onclick="closeCuteModal('logoutConfirmModal')">No, Stay</button>
+            <button type="button" class="cute-btn cute-btn-yes" onclick="confirmLogout()">Yes, Logout</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- Service Worker Registration for Notifications -->
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+            console.log('Service Worker registered:', registration.scope);
+        })
+        .catch(error => {
+            console.log('Service Worker registration failed:', error);
+        });
+}
+</script>
+
+
+<!-- Notification Permission Modal -->
+<div class="modal-overlay" id="notifPermissionModal" style="z-index: 9999999;">
+    <div class="modal-box" style="text-align: center; max-width: 420px; padding: 40px;">
+        <div style="font-size: 56px; margin-bottom: 16px;">🔔</div>
+        <h3 style="margin: 0 0 12px; color: #0f172a; font-size: 22px;">Stay in the Loop!</h3>
+        <p style="color: #64748b; margin-bottom: 28px; font-size: 15px; line-height: 1.6;">Get instant alerts when your stock runs low — never miss a restock moment! Works on both laptop and phone.</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" class="modal-close-btn" style="margin: 0; width: auto; padding: 12px 24px;" onclick="dismissNotifPermission()">Not Now</button>
+            <button type="button" class="add-product-btn" style="margin: 0; width: auto; padding: 12px 28px; background: #22c55e; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);" onclick="enableNotifPermission()">Enable Notifications ✨</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
