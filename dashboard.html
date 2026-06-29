@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0284c7">
+    <meta name="description" content="Stock Space - Inventory Management">
     <title>Dashboard - Stock Space</title>
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+<base target="_blank">
 </head>
 <body>
 
@@ -234,12 +236,12 @@
 <!-- Service Worker Registration for Notifications -->
 <script>
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
+    navigator.serviceWorker.register('./js/sw.js', { scope: './' })
         .then(registration => {
-            console.log('Service Worker registered:', registration.scope);
+            console.log('[SW] Registered:', registration.scope);
         })
         .catch(error => {
-            console.log('Service Worker registration failed:', error);
+            console.log('[SW] Registration failed:', error);
         });
 }
 </script>
@@ -254,6 +256,19 @@ if ('serviceWorker' in navigator) {
         <div style="display: flex; gap: 12px; justify-content: center;">
             <button type="button" class="modal-close-btn" style="margin: 0; width: auto; padding: 12px 24px;" onclick="dismissNotifPermission()">Not Now</button>
             <button type="button" class="add-product-btn" style="margin: 0; width: auto; padding: 12px 28px; background: #22c55e; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);" onclick="enableNotifPermission()">Enable Notifications ✨</button>
+        </div>
+    </div>
+</div>
+
+<!-- PWA Install Prompt -->
+<div class="modal-overlay" id="pwaInstallModal" style="z-index: 9999998; display: none;">
+    <div class="modal-box" style="text-align: center; max-width: 420px; padding: 40px;">
+        <div style="font-size: 56px; margin-bottom: 16px;">📱</div>
+        <h3 style="margin: 0 0 12px; color: #0f172a; font-size: 22px;">Install Stock Space</h3>
+        <p style="color: #64748b; margin-bottom: 28px; font-size: 15px; line-height: 1.6;">Add Stock Space to your home screen for the best experience and reliable low-stock notifications!</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" class="modal-close-btn" style="margin: 0; width: auto; padding: 12px 24px;" onclick="dismissPWAInstall()">Not Now</button>
+            <button type="button" class="add-product-btn" style="margin: 0; width: auto; padding: 12px 28px; background: #0284c7; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);" onclick="installPWA()">Install App 🚀</button>
         </div>
     </div>
 </div>

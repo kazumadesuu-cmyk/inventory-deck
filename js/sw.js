@@ -20,10 +20,11 @@ self.addEventListener('message', (event) => {
     const data = event.data;
     const options = {
       body: data.body || 'Low stock warning!',
-      icon: data.icon || 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-      badge: data.badge || 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+      icon: data.icon || './icon-512.png',
+      badge: data.badge || './icon-512.png',
       tag: data.tag || 'stock-alert',
       requireInteraction: true,
+      renotify: true,
       actions: [
         { action: 'view', title: 'View Dashboard' },
         { action: 'dismiss', title: 'Dismiss' }
@@ -41,10 +42,11 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Stock Space Alert';
   const options = {
     body: data.body || 'Low stock warning!',
-    icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-    badge: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+    icon: data.icon || './icon-512.png',
+    badge: data.badge || './icon-512.png',
     tag: data.tag || 'stock-alert',
     requireInteraction: true,
+    renotify: true,
     actions: [
       { action: 'view', title: 'View Dashboard' },
       { action: 'dismiss', title: 'Dismiss' }
@@ -59,13 +61,20 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   console.log('[SW] Notification clicked:', event.action);
   event.notification.close();
+
   if (event.action === 'view' || !event.action) {
     event.waitUntil(
-      clients.matchAll({ type: 'window' }).then((clientList) => {
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        // Try to focus an existing window
         for (const client of clientList) {
-          if ('focus' in client) return client.focus();
+          if (client.url.includes('dashboard') && 'focus' in client) {
+            return client.focus();
+          }
         }
-        if (clients.openWindow) return clients.openWindow('./dashboard.html');
+        // If no existing window, open a new one
+        if (clients.openWindow) {
+          return clients.openWindow('./dashboard.html');
+        }
       })
     );
   }

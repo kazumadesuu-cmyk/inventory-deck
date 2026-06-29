@@ -17,6 +17,10 @@ let currentActivityFilter = 'ALL';
 let actionCooldown = false;
 let cooldownTimer = null;
 
+// PWA Install tracking
+let deferredInstallPrompt = null;
+let pwaInstallDismissed = localStorage.getItem('pwaInstallDismissed') === 'true';
+
 function startActionCooldown() {
     actionCooldown = true;
     if (cooldownTimer) clearTimeout(cooldownTimer);
@@ -93,10 +97,74 @@ function initializeDashboard() {
     window.addEventListener('online', updateNetworkStatus);
     window.addEventListener('offline', updateNetworkStatus);
 
+    // Setup PWA install prompt listener
+    setupPWAInstallPrompt();
+
+    // Delayed notification permission check
     setTimeout(() => {
         maybeRequestNotificationPermission();
     }, 3000);
 }
+
+// ==================== PWA INSTALL PROMPT ====================
+
+function setupPWAInstallPrompt() {
+    // Listen for the beforeinstallprompt event (Chrome/Android)
+    window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('[PWA] beforeinstallprompt fired');
+        e.preventDefault();
+        deferredInstallPrompt = e;
+
+        // Show install prompt after a short delay if not dismissed before
+        if (!pwaInstallDismissed && !window.matchMedia('(display-mode: standalone)').matches) {
+            setTimeout(() => {
+                showPWAInstallModal();
+            }, 5000);
+        }
+    });
+
+    // Detect if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('[PWA] App is running in standalone mode');
+    }
+}
+
+function showPWAInstallModal() {
+    const modal = document.getElementById('pwaInstallModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+window.dismissPWAInstall = function() {
+    localStorage.setItem('pwaInstallDismissed', 'true');
+    pwaInstallDismissed = true;
+    const modal = document.getElementById('pwaInstallModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.installPWA = async function() {
+    const modal = document.getElementById('pwaInstallModal');
+    if (modal) modal.style.display = 'none';
+
+    if (!deferredInstallPrompt) {
+        showToast('Install prompt not available. Try "Add to Home Screen" from Chrome menu.', 'warning');
+        return;
+    }
+
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    console.log('[PWA] Install prompt outcome:', outcome);
+
+    if (outcome === 'accepted') {
+        showToast('Stock Space is being installed!', 'success');
+        localStorage.setItem('pwaInstallDismissed', 'true');
+        pwaInstallDismissed = true;
+    } else {
+        showToast('Install cancelled', 'warning');
+    }
+    deferredInstallPrompt = null;
+};
 
 async function handleFormSubmit(e) {
     e.preventDefault();
@@ -302,7 +370,7 @@ function checkLowStock(productList) {
             // Show warning modal
             showLowStockModal(lowItems);
 
-            // Send Chrome desktop notification
+            // Send Chrome/desktop notification
             sendChromeNotification(newlyAlerted);
         }
     }
@@ -323,7 +391,7 @@ function updateLowStockBanner(lowItems) {
     }
 }
 
-// ==================== CHROME NOTIFICATIONS (FIXED) ====================
+// ==================== CHROME NOTIFICATIONS (FULLY FIXED FOR ANDROID PWA) ====================
 
 function maybeRequestNotificationPermission() {
     if (!('Notification' in window)) {
@@ -344,13 +412,18 @@ function maybeRequestNotificationPermission() {
     }
 }
 
-function sendChromeNotification(newlyAlertedItems) {
+/**
+ * FIXED: Sends notifications using Service Worker registration.showNotification()
+ * This is the ONLY method that works reliably on Android PWA.
+ * new Notification() is BLOCKED on mobile Chrome when running as PWA.
+ */
+async function sendChromeNotification(newlyAlertedItems) {
     if (!('Notification' in window)) {
-        console.log('Notifications not supported');
+        console.log('[NOTIF] Notifications not supported');
         return;
     }
     if (Notification.permission !== 'granted') {
-        console.log('Notification permission not granted');
+        console.log('[NOTIF] Permission not granted, skipping notification');
         return;
     }
 
@@ -358,46 +431,87 @@ function sendChromeNotification(newlyAlertedItems) {
     const productNames = newlyAlertedItems.map(item => item.name).join(', ');
 
     const title = totalCount === 1 
-        ? 'Low Stock Alert' 
-        : `${totalCount} Items Low on Stock`;
+        ? '⚠️ Low Stock Alert' 
+        : `⚠️ ${totalCount} Items Low on Stock`;
 
     const body = totalCount === 1 
         ? `${productNames} is running low! Only ${newlyAlertedItems[0].quantity} left (limit: ${newlyAlertedItems[0].alert_limit})`
         : `${productNames} are running low on stock.`;
 
+    // Use relative path for icon (works in both dev and production)
     const iconUrl = './icon-512.png';
 
-    console.log('Sending notification:', title, body);
+    console.log('[NOTIF] Preparing notification:', title);
 
-    // MOBILE PWA: Always use Service Worker registration.showNotification
-    // new Notification() does NOT work on Android/iOS PWA
+    // Vibrate on mobile (Android supports this)
+    if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]);
+    }
+
+    // METHOD 1: Service Worker registration.showNotification() - REQUIRED for mobile PWA
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(reg => {
-            reg.showNotification(title, {
+        try {
+            const reg = await navigator.serviceWorker.ready;
+            console.log('[NOTIF] SW ready, registration state:', reg.active ? 'active' : 'not active');
+
+            if (reg.active) {
+                await reg.showNotification(title, {
+                    body: body,
+                    icon: iconUrl,
+                    badge: iconUrl,
+                    tag: 'stock-alert-' + Date.now(),
+                    requireInteraction: true,
+                    renotify: true,
+                    // Android-specific: actions for notification
+                    actions: [
+                        { action: 'view', title: 'View Dashboard' },
+                        { action: 'dismiss', title: 'Dismiss' }
+                    ],
+                    // Additional data for the service worker
+                    data: {
+                        url: './dashboard.html',
+                        productIds: newlyAlertedItems.map(i => i.id)
+                    }
+                });
+                console.log('[NOTIF] ✅ SW notification sent successfully');
+                return;
+            } else {
+                console.warn('[NOTIF] SW not active yet, waiting...');
+            }
+        } catch (err) {
+            console.error('[NOTIF] SW notification failed:', err);
+        }
+    }
+
+    // METHOD 2: Fallback using postMessage to SW (if registration.ready didn't work)
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        try {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'STOCK_ALERT',
+                title: title,
                 body: body,
                 icon: iconUrl,
                 badge: iconUrl,
-                tag: 'stock-alert-' + Date.now(),
-                requireInteraction: true,
-                renotify: true,
-                actions: [
-                    { action: 'view', title: 'View Dashboard' },
-                    { action: 'dismiss', title: 'Dismiss' }
-                ]
+                tag: 'stock-alert-' + Date.now()
             });
-            console.log('SW notification sent (mobile + desktop)');
-        }).catch(err => {
-            console.error('SW notification failed, trying fallback:', err);
-            // Desktop fallback only
-            try {
-                new Notification(title, { body, icon: iconUrl });
-            } catch(e) { console.error('Fallback also failed:', e); }
+            console.log('[NOTIF] ✅ Notification sent via postMessage');
+            return;
+        } catch (err) {
+            console.error('[NOTIF] postMessage failed:', err);
+        }
+    }
+
+    // METHOD 3: Desktop-only fallback (new Notification)
+    // This will NOT work on Android PWA, only desktop browsers
+    try {
+        new Notification(title, { 
+            body: body, 
+            icon: iconUrl,
+            requireInteraction: true
         });
-    } else {
-        // Desktop-only fallback
-        try {
-            new Notification(title, { body, icon: iconUrl });
-        } catch(e) { console.error('Notification failed:', e); }
+        console.log('[NOTIF] ✅ Fallback desktop notification sent');
+    } catch (e) {
+        console.error('[NOTIF] All notification methods failed:', e);
     }
 }
 
@@ -410,33 +524,44 @@ window.requestNotifPermission = async function() {
     try {
         const permission = await Notification.requestPermission();
         console.log('Notification permission result:', permission);
+
         if (permission === 'granted') {
             showToast('Notifications enabled!', 'success');
-            // Test notification using SW registration (required for mobile)
+
+            // Send test notification using SW (required for mobile)
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification('Stock Space', {
+                try {
+                    const reg = await navigator.serviceWorker.ready;
+                    await reg.showNotification('Stock Space 📦', {
                         body: 'You will now receive alerts when items run low!',
-                        icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-                        badge: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+                        icon: './icon-512.png',
+                        badge: './icon-512.png',
                         tag: 'test-' + Date.now(),
-                        requireInteraction: true
+                        requireInteraction: true,
+                        actions: [
+                            { action: 'view', title: 'View Dashboard' },
+                            { action: 'dismiss', title: 'Dismiss' }
+                        ]
                     });
-                    console.log('Test notification sent via SW');
-                }).catch(err => {
-                    console.error('Test notification failed:', err);
+                    console.log('[NOTIF] Test notification sent via SW');
+                } catch (err) {
+                    console.error('[NOTIF] Test notification failed:', err);
                     // Desktop fallback
-                    new Notification('Stock Space', {
-                        body: 'You will now receive alerts when items run low!',
-                        icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png'
-                    });
-                });
+                    try {
+                        new Notification('Stock Space', {
+                            body: 'You will now receive alerts when items run low!',
+                            icon: './icon-512.png'
+                        });
+                    } catch(e) {}
+                }
             } else {
                 // Desktop fallback
-                new Notification('Stock Space', {
-                    body: 'You will now receive alerts when items run low!',
-                    icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png'
-                });
+                try {
+                    new Notification('Stock Space', {
+                        body: 'You will now receive alerts when items run low!',
+                        icon: './icon-512.png'
+                    });
+                } catch(e) {}
             }
         } else {
             localStorage.setItem('notifPromptDismissed', 'true');
@@ -1034,14 +1159,18 @@ window.enableNotifPermission = async function() {
         showToast('Notifications enabled!', 'success');
         // Use SW for mobile PWA - new Notification() blocked on phones
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(reg => {
-                reg.showNotification('Stock Space 📦', {
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                await reg.showNotification('Stock Space 📦', {
                     body: 'You will now get alerts when items run low!',
                     icon: './icon-512.png',
                     badge: './icon-512.png',
-                    tag: 'welcome-notif'
+                    tag: 'welcome-notif',
+                    requireInteraction: true
                 });
-            });
+            } catch (err) {
+                console.error('[NOTIF] Welcome notification failed:', err);
+            }
         }
     } else {
         localStorage.setItem('notifPromptDismissed', 'true');
