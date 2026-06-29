@@ -10,6 +10,7 @@ body {
     min-height: 100vh;
     color: #3a4558;
     background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%);
+    overflow-x: hidden;
 }
 
 body.auth-page {
@@ -17,6 +18,9 @@ body.auth-page {
     display: flex;
     justify-content: center;
     align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 /* ---------- AUTH FORMS ---------- */
@@ -25,10 +29,12 @@ body.auth-page {
     padding: 50px 45px;
     border-radius: 28px;
     box-shadow: 0 10px 30px rgba(244, 143, 177, 0.15);
-    width: 460px;
+    width: 100%;
+    max-width: 460px;
     text-align: center;
     border: 1px solid #ffe4e6;
     animation: fadeIn 0.6s ease;
+    box-sizing: border-box;
 }
 
 .form-container h2 {
@@ -307,7 +313,7 @@ button.submit-btn:active,
 .dashboard-wrapper {
     width: 100%;
     max-width: 1400px;
-    padding: 40px 20px 40px 20px;
+    padding: 24px 16px 40px 16px;
     background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%);
     min-height: 100vh;
     display: flex;
@@ -315,6 +321,8 @@ button.submit-btn:active,
     align-items: center;
     transition: padding-left 0.5s cubic-bezier(0.22, 1, 0.36, 1);
     margin: 0 auto;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 /* ============================================
@@ -337,7 +345,7 @@ button.submit-btn:active,
     transition: left 0.5s cubic-bezier(0.22, 1, 0.36, 1);
     display: flex;
     flex-direction: column;
-    padding-top: 70px;
+    padding-top: 20px;
     padding-bottom: 20px;
     box-sizing: border-box;
 }
@@ -347,41 +355,45 @@ button.submit-btn:active,
     left: 0;
 }
 
-/* Hamburger button - always visible, fixed position */
+/* Hamburger button - black circle with three white lines */
 .hamburger-indicator {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    width: 52px;
+    height: 52px;
+    background: #000;
+    border: none;
+    border-radius: 50%;
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    width: 24px;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
     cursor: pointer;
     z-index: 99999999;
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(14, 116, 144, 0.15);
-    transition: all 0.3s ease;
+    box-shadow: 0 4px 14px rgba(0,0,0,.45);
+    transition: all .25s ease;
+    padding: 0;
 }
 
-.hamburger-indicator:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(14, 116, 144, 0.25);
+.hamburger-indicator:hover{
+    transform: scale(1.08);
+    box-shadow: 0 6px 20px rgba(0,0,0,.55);
 }
 
-.hamburger-indicator span {
-    display: block;
-    height: 3px;
-    width: 100%;
-    background-color: #0284c7;
-    border-radius: 2px;
-    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+.hamburger-indicator span{
+    display:block;
+    width:26px;
+    height:3px;
+    background:#fff;
+    border-radius:2px;
+    transition:.3s ease;
 }
 
 /* Hamburger transforms to X when active */
 .hamburger-indicator.active span:nth-child(1) {
-    transform: translateY(8px) rotate(45deg);
+    transform: translateY(9px) rotate(45deg);
 }
 
 .hamburger-indicator.active span:nth-child(2) {
@@ -389,7 +401,7 @@ button.submit-btn:active,
 }
 
 .hamburger-indicator.active span:nth-child(3) {
-    transform: translateY(-8px) rotate(-45deg);
+    transform: translateY(-9px) rotate(-45deg);
 }
 
 /* Menu list */
@@ -2021,7 +2033,10 @@ button.submit-btn:active,
 /* ---------- TABLET (max-width: 768px) ---------- */
 @media (max-width: 768px) {
     .dashboard-wrapper {
-        padding: 14px 10px 14px 60px;
+        padding: 80px 12px 20px 12px;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .sidebar-nav {
@@ -2036,8 +2051,16 @@ button.submit-btn:active,
     .hamburger-indicator {
         top: 16px;
         left: 16px;
-        padding: 10px;
+        width: 46px;
+        height: 46px;
+        padding: 0;
+        border: none;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    }
+
+    .hamburger-indicator span {
         width: 22px;
+        height: 2.5px;
     }
 
     .sidebar-menu-list {
@@ -2048,7 +2071,7 @@ button.submit-btn:active,
         flex-direction: row;
         gap: 12px;
         align-items: center;
-        padding: 16px 20px;
+        padding: 14px 16px 14px 72px;
     }
 
     .header h2 {
@@ -2238,7 +2261,9 @@ button.submit-btn:active,
 /* ---------- MOBILE (max-width: 480px) ---------- */
 @media (max-width: 480px) {
     .dashboard-wrapper {
-        padding: 10px 6px 10px 48px;
+        padding: 80px 12px 20px 12px;
+        align-items: center;
+        width: 100%;
     }
 
     .sidebar-nav {
@@ -2251,14 +2276,18 @@ button.submit-btn:active,
     }
 
     .hamburger-indicator {
-        width: 20px;
-        padding: 10px;
+        width: 46px;
+        height: 46px;
+        padding: 0;
         top: 14px;
         left: 14px;
-        gap: 4px;
+        gap: 5px;
+        border: none;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
     }
 
     .hamburger-indicator span {
+        width: 22px;
         height: 2.5px;
     }
 
