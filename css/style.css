@@ -2120,46 +2120,46 @@ button.submit-btn:active,
         font-size: 24px;
     }
 
-    /* FIX: Cards grid - 2 columns on tablet instead of 3 */
+    /* 3 columns on tablet */
     .cards-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
     }
 
     .product-card {
-        padding: 12px;
-        border-radius: 16px;
+        padding: 10px;
+        border-radius: 14px;
     }
 
     .card-title-text {
-        font-size: 13px;
-        margin: 0 0 4px;
+        font-size: 12px;
+        margin: 0 0 3px;
     }
 
     .card-tag {
-        font-size: 10px;
-        padding: 2px 8px;
-        margin-bottom: 8px;
+        font-size: 9px;
+        padding: 2px 6px;
+        margin-bottom: 6px;
     }
 
     .card-img-holder {
-        height: 90px;
-        border-radius: 12px;
-        margin-bottom: 8px;
-    }
-
-    .stats-infobar {
-        padding: 8px;
+        height: 80px;
         border-radius: 10px;
         margin-bottom: 8px;
     }
 
+    .stats-infobar {
+        padding: 6px;
+        border-radius: 8px;
+        margin-bottom: 6px;
+    }
+
     .stat-block .lbl {
-        font-size: 9px;
+        font-size: 8px;
     }
 
     .stat-block .val {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .button-drawer {
@@ -2175,16 +2175,16 @@ button.submit-btn:active,
     }
 
     .btn-action {
-        padding: 6px 4px;
-        font-size: 10px;
-        border-radius: 8px;
+        padding: 5px 3px;
+        font-size: 9px;
+        border-radius: 6px;
     }
 
     .status-dot {
-        width: 7px;
-        height: 7px;
-        top: 8px;
-        right: 8px;
+        width: 5px;
+        height: 5px;
+        top: 6px;
+        right: 6px;
     }
 
     .form-container {
@@ -2317,7 +2317,7 @@ button.submit-btn:active,
     }
 
     .hamburger-indicator:active {
-        opacity: 0.1;
+        opacity: 0.7;
         transform: scale(0.95);
     }
 
@@ -2382,48 +2382,52 @@ button.submit-btn:active,
         border-radius: 12px;
     }
 
-    /* FIX: 1 column on small phones */
+    /* 3 columns on small phones */
     .cards-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
     }
 
     .product-card {
-        padding: 14px;
-        border-radius: 16px;
-    }
-
-    .card-title-text {
-        font-size: 15px;
-    }
-
-    .card-tag {
-        font-size: 10px;
-        padding: 3px 10px;
-    }
-
-    .card-img-holder {
-        height: 140px;
+        padding: 8px;
         border-radius: 12px;
     }
 
+    .card-title-text {
+        font-size: 11px;
+        margin: 0 0 2px;
+    }
+
+    .card-tag {
+        font-size: 8px;
+        padding: 2px 6px;
+        margin-bottom: 6px;
+    }
+
+    .card-img-holder {
+        height: 70px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+
     .stats-infobar {
-        padding: 10px;
-        border-radius: 10px;
+        padding: 4px;
+        border-radius: 6px;
+        margin-bottom: 6px;
     }
 
     .stat-block .lbl {
-        font-size: 9px;
+        font-size: 7px;
     }
 
     .stat-block .val {
-        font-size: 14px;
+        font-size: 10px;
     }
 
     .btn-action {
-        padding: 8px 6px;
-        font-size: 11px;
-        border-radius: 8px;
+        padding: 4px 2px;
+        font-size: 8px;
+        border-radius: 6px;
     }
 
     .form-container {

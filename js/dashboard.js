@@ -179,13 +179,23 @@ async function handleFormSubmit(e) {
         items_sold: 0
     };
 
+    // Check both file inputs (camera and regular)
     const imageInput = document.getElementById('form_image');
-    if (imageInput && imageInput.files && imageInput.files[0]) {
+    const cameraInput = document.getElementById('form_image_camera');
+    const file = (imageInput && imageInput.files && imageInput.files[0]) 
+        ? imageInput.files[0] 
+        : (cameraInput && cameraInput.files && cameraInput.files[0]) 
+            ? cameraInput.files[0] 
+            : null;
+
+    if (file) {
         try {
-            const base64Image = await readFileAsBase64(imageInput.files[0]);
-            data.image_url = base64Image;
+            const base64Image = await readFileAsBase64(file);
+            // Resize and crop to fit card perfectly
+            data.image_url = await resizeAndCropImage(base64Image);
+            console.log('[IMAGE] Image resized and cropped for card');
         } catch (err) {
-            console.error('Image read failed:', err);
+            console.error('Image processing failed:', err);
         }
     }
 
@@ -216,6 +226,66 @@ function readFileAsBase64(file) {
         reader.onload = (e) => resolve(e.target.result);
         reader.onerror = (e) => reject(e);
         reader.readAsDataURL(file);
+    });
+}
+
+/**
+ * Preview image before upload - works with both camera and file picker
+ */
+window.previewImage = function(input) {
+    const previewDiv = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            previewDiv.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+/**
+ * Resize and crop image to fit card dimensions (square-ish, ~300x160 ratio)
+ * Uses canvas to crop center and resize
+ */
+function resizeAndCropImage(base64Image, maxWidth = 400, maxHeight = 220) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Target aspect ratio (card image holder is roughly 2.5:1)
+            const targetRatio = maxWidth / maxHeight;
+            const imgRatio = img.width / img.height;
+
+            let cropWidth, cropHeight, cropX, cropY;
+
+            if (imgRatio > targetRatio) {
+                // Image is wider - crop sides
+                cropHeight = img.height;
+                cropWidth = img.height * targetRatio;
+                cropX = (img.width - cropWidth) / 2;
+                cropY = 0;
+            } else {
+                // Image is taller - crop top/bottom
+                cropWidth = img.width;
+                cropHeight = img.width / targetRatio;
+                cropX = 0;
+                cropY = (img.height - cropHeight) / 2;
+            }
+
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+
+            // Draw cropped and resized image
+            ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, maxWidth, maxHeight);
+
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = base64Image;
     });
 }
 
@@ -823,6 +893,12 @@ window.openAddModal = function() {
     if (idField) idField.value = '';
     const qtyWrapper = document.getElementById('qty_input_wrapper');
     if (qtyWrapper) qtyWrapper.style.display = 'block';
+
+    // Clear image preview
+    const previewDiv = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    if (previewDiv) previewDiv.style.display = 'none';
+    if (previewImg) previewImg.src = '';
 };
 
 window.closeModal = function() {

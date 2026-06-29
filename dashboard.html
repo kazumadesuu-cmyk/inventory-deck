@@ -211,7 +211,16 @@
             <div id="qty_input_wrapper"><input type="number" id="form_quantity" placeholder="How many in stock?" min="0" value="0"></div>
             <label class="form-label">Stock Alert Limit</label>
             <input type="number" id="form_alert_limit" placeholder="Alert when stock drops to?" min="0" value="5" required>
-            <div style="margin-top:8px;"><input type="file" id="form_image" accept="image/*" style="border:none; background:none;"></div>
+            <label class="form-label">Product Image</label>
+            <div style="display: flex; gap: 8px; margin: 8px 0;">
+                <button type="button" class="btn-action btn-edit" style="flex: 1; padding: 10px; font-size: 13px;" onclick="document.getElementById('form_image_camera').click()">📷 Take Photo</button>
+                <button type="button" class="btn-action btn-restock" style="flex: 1; padding: 10px; font-size: 13px;" onclick="document.getElementById('form_image').click()">📁 Choose File</button>
+            </div>
+            <input type="file" id="form_image" accept="image/*" style="display:none;" onchange="previewImage(this)">
+            <input type="file" id="form_image_camera" accept="image/*" capture="environment" style="display:none;" onchange="previewImage(this)">
+            <div id="imagePreview" style="width: 100%; height: 120px; border-radius: 12px; overflow: hidden; background: #f8fafc; display: none; margin: 8px 0;">
+                <img id="previewImg" src="" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
             <button type="submit" class="add-product-btn" style="width:100%; margin-top:15px; padding:12px; color:white; border:none; font-weight:bold; cursor:pointer; border-radius:12px;">Save Details</button>
             <button type="button" class="modal-close-btn" onclick="closeModal()">Cancel</button>
         </form>
