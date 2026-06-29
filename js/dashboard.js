@@ -413,9 +413,8 @@ function maybeRequestNotificationPermission() {
 }
 
 /**
- * FIXED: Sends notifications using Service Worker registration.showNotification()
- * This is the ONLY method that works reliably on Android PWA.
- * new Notification() is BLOCKED on mobile Chrome when running as PWA.
+ * FIXED: Sends Chrome/system notifications on BOTH desktop and mobile.
+ * Uses Service Worker registration.showNotification() which works everywhere.
  */
 async function sendChromeNotification(newlyAlertedItems) {
     if (!('Notification' in window)) {
@@ -438,52 +437,46 @@ async function sendChromeNotification(newlyAlertedItems) {
         ? `${productNames} is running low! Only ${newlyAlertedItems[0].quantity} left (limit: ${newlyAlertedItems[0].alert_limit})`
         : `${productNames} are running low on stock.`;
 
-    // Use relative path for icon (works in both dev and production)
     const iconUrl = './icon-512.png';
+    const tag = 'stock-alert-' + Date.now();
 
     console.log('[NOTIF] Preparing notification:', title);
 
     // Vibrate on mobile (Android supports this)
     if (navigator.vibrate) {
-        navigator.vibrate([200, 100, 200]);
+        try {
+            navigator.vibrate([200, 100, 200]);
+        } catch (e) {}
     }
 
-    // METHOD 1: Service Worker registration.showNotification() - REQUIRED for mobile PWA
+    // METHOD 1: Service Worker registration.showNotification() - Works on BOTH desktop & mobile
     if ('serviceWorker' in navigator) {
         try {
             const reg = await navigator.serviceWorker.ready;
-            console.log('[NOTIF] SW ready, registration state:', reg.active ? 'active' : 'not active');
-
+            console.log('[NOTIF] SW ready, state:', reg.active ? 'active' : 'not active');
+            
             if (reg.active) {
                 await reg.showNotification(title, {
                     body: body,
                     icon: iconUrl,
                     badge: iconUrl,
-                    tag: 'stock-alert-' + Date.now(),
+                    tag: tag,
                     requireInteraction: true,
                     renotify: true,
-                    // Android-specific: actions for notification
                     actions: [
                         { action: 'view', title: 'View Dashboard' },
                         { action: 'dismiss', title: 'Dismiss' }
-                    ],
-                    // Additional data for the service worker
-                    data: {
-                        url: './dashboard.html',
-                        productIds: newlyAlertedItems.map(i => i.id)
-                    }
+                    ]
                 });
-                console.log('[NOTIF] ✅ SW notification sent successfully');
+                console.log('[NOTIF] ✅ SW notification sent (desktop + mobile)');
                 return;
-            } else {
-                console.warn('[NOTIF] SW not active yet, waiting...');
             }
         } catch (err) {
             console.error('[NOTIF] SW notification failed:', err);
         }
     }
 
-    // METHOD 2: Fallback using postMessage to SW (if registration.ready didn't work)
+    // METHOD 2: Fallback using postMessage to SW
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         try {
             navigator.serviceWorker.controller.postMessage({
@@ -492,7 +485,7 @@ async function sendChromeNotification(newlyAlertedItems) {
                 body: body,
                 icon: iconUrl,
                 badge: iconUrl,
-                tag: 'stock-alert-' + Date.now()
+                tag: tag
             });
             console.log('[NOTIF] ✅ Notification sent via postMessage');
             return;
@@ -501,8 +494,7 @@ async function sendChromeNotification(newlyAlertedItems) {
         }
     }
 
-    // METHOD 3: Desktop-only fallback (new Notification)
-    // This will NOT work on Android PWA, only desktop browsers
+    // METHOD 3: Desktop fallback (new Notification) - works on desktop Chrome
     try {
         new Notification(title, { 
             body: body, 
