@@ -105,6 +105,22 @@ function initializeDashboard() {
     setTimeout(() => {
         maybeRequestNotificationPermission();
     }, 3000);
+    
+    // Keep-alive ping for Android - prevents SW from being killed
+    setInterval(() => {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'PING' });
+        }
+    }, 20000);
+    
+    // Register for background sync (if supported)
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        navigator.serviceWorker.ready.then(reg => {
+            reg.sync.register('stock-sync').catch(err => {
+                console.log('[SYNC] Background sync not supported:', err);
+            });
+        });
+    }
 }
 
 // ==================== PWA INSTALL PROMPT ====================
@@ -641,11 +657,11 @@ window.requestNotifPermission = async function() {
                         icon: './icon-512.png',
                         badge: './icon-512.png',
                         tag: 'test-' + Date.now(),
-                        requireInteraction: true,
-                        actions: [
-                            { action: 'view', title: 'View Dashboard' },
-                            { action: 'dismiss', title: 'Dismiss' }
-                        ]
+                        requireInteraction: false,
+                        renotify: true,
+                        // Android-specific
+                        vibrate: [200, 100, 200],
+                        silent: false
                     });
                     console.log('[NOTIF] Test notification sent via SW');
                 } catch (err) {
