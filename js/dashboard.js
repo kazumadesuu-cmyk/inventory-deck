@@ -110,24 +110,39 @@ function initializeDashboard() {
 // ==================== PWA INSTALL PROMPT ====================
 
 function setupPWAInstallPrompt() {
+    console.log('[PWA] Setting up install prompt...');
+
+    // Check if already installed
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+        || window.navigator.standalone === true;
+
+    if (isStandalone) {
+        console.log('[PWA] App already installed, running in standalone mode');
+        return;
+    }
+
     // Listen for the beforeinstallprompt event (Chrome/Android)
     window.addEventListener('beforeinstallprompt', (e) => {
-        console.log('[PWA] beforeinstallprompt fired');
+        console.log('[PWA] ✅ beforeinstallprompt fired!');
         e.preventDefault();
         deferredInstallPrompt = e;
 
         // Show install prompt after a short delay if not dismissed before
-        if (!pwaInstallDismissed && !window.matchMedia('(display-mode: standalone)').matches) {
+        if (!pwaInstallDismissed) {
             setTimeout(() => {
                 showPWAInstallModal();
-            }, 5000);
+            }, 3000);
         }
     });
 
-    // Detect if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-        console.log('[PWA] App is running in standalone mode');
-    }
+    // Also listen for the appinstalled event
+    window.addEventListener('appinstalled', () => {
+        console.log('[PWA] App was installed!');
+        deferredInstallPrompt = null;
+        localStorage.setItem('pwaInstallDismissed', 'true');
+        pwaInstallDismissed = true;
+        showToast('Stock Space installed successfully!', 'success');
+    });
 }
 
 function showPWAInstallModal() {
@@ -149,7 +164,8 @@ window.installPWA = async function() {
     if (modal) modal.style.display = 'none';
 
     if (!deferredInstallPrompt) {
-        showToast('Install prompt not available. Try "Add to Home Screen" from Chrome menu.', 'warning');
+        // If no deferred prompt, try to guide user to manual install
+        showManualInstallGuide();
         return;
     }
 
@@ -166,6 +182,25 @@ window.installPWA = async function() {
     }
     deferredInstallPrompt = null;
 };
+
+/**
+ * Shows manual install instructions when native prompt is not available
+ */
+function showManualInstallGuide() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+
+    let message = '';
+    if (isIOS) {
+        message = 'Tap the Share button (⬆️) then "Add to Home Screen"';
+    } else if (isAndroid) {
+        message = 'Tap Chrome menu (⋮) → "Add to Home screen"';
+    } else {
+        message = 'Open Chrome menu → More tools → Create shortcut';
+    }
+
+    showToast(message, 'warning');
+}
 
 async function handleFormSubmit(e) {
     e.preventDefault();

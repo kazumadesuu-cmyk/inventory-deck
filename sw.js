@@ -13,6 +13,12 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+// FETCH HANDLER - Required for PWA install prompt
+self.addEventListener('fetch', (event) => {
+  // Just pass through - no caching needed for this app
+  event.respondWith(fetch(event.request));
+});
+
 // Handle messages from the main page
 self.addEventListener('message', (event) => {
   console.log('[SW] Message received:', event.data);

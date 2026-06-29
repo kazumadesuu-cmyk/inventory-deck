@@ -6,12 +6,24 @@
     <meta name="theme-color" content="#0284c7">
     <meta name="description" content="Stock Space - Inventory Management">
     <title>Dashboard - Stock Space</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Stock Space">
+    <link rel="apple-touch-icon" href="./icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 <base target="_blank">
 </head>
 <body>
+
+<!-- Debug: Check PWA status -->
+<script>
+console.log('[PWA] display-mode standalone:', window.matchMedia('(display-mode: standalone)').matches);
+console.log('[PWA] navigator.standalone:', window.navigator.standalone);
+console.log('[PWA] User agent:', navigator.userAgent.substring(0, 60));
+</script>
 
 <!-- Hamburger button - sits outside sidebar so it's always visible -->
 <button class="hamburger-indicator" onclick="toggleSidebar(); return false;" aria-label="Menu">
