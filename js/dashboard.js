@@ -1358,8 +1358,66 @@ window.addToCart = function(productId) {
     }
 
     updateCartBadge();
-    showToast(`Added ${product.name} to cart`, 'success');
+    showCartAddedToast(product.name);
 };
+
+/**
+ * Shows a floating toast on the card like "🛒 Added to Cart!"
+ * Similar to the "Sold x1 Water" toast
+ */
+function showCartAddedToast(productName) {
+    // Create a floating toast similar to showActionToast
+    let container = document.getElementById('cartToastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'cartToastContainer';
+        container.style.cssText = `
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        `;
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        background: #f59e0b;
+        color: white;
+        padding: 14px 22px;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 14px;
+        box-shadow: 0 8px 30px rgba(245, 158, 11, 0.4);
+        opacity: 0;
+        transform: translateX(50px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        pointer-events: auto;
+        min-width: 220px;
+        text-align: center;
+    `;
+    toast.innerHTML = `🛒 ${productName} added to cart!`;
+
+    container.appendChild(toast);
+    toast.offsetHeight;
+
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    });
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(50px)';
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 400);
+    }, 2500);
+}
 
 window.updateCartBadge = function() {
     const badge = document.getElementById('cartBadge');
