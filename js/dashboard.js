@@ -365,42 +365,39 @@ function sendChromeNotification(newlyAlertedItems) {
         ? `${productNames} is running low! Only ${newlyAlertedItems[0].quantity} left (limit: ${newlyAlertedItems[0].alert_limit})`
         : `${productNames} are running low on stock.`;
 
+    const iconUrl = './icon-512.png';
+
     console.log('Sending notification:', title, body);
 
-    // Method 1: Standard Notification API (works when tab is open)
-    try {
-        const notification = new Notification(title, {
-            body: body,
-            icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-            badge: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-            tag: 'stock-alert-' + Date.now(),
-            requireInteraction: true,
-            renotify: true
+    // MOBILE PWA: Always use Service Worker registration.showNotification
+    // new Notification() does NOT work on Android/iOS PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(reg => {
+            reg.showNotification(title, {
+                body: body,
+                icon: iconUrl,
+                badge: iconUrl,
+                tag: 'stock-alert-' + Date.now(),
+                requireInteraction: true,
+                renotify: true,
+                actions: [
+                    { action: 'view', title: 'View Dashboard' },
+                    { action: 'dismiss', title: 'Dismiss' }
+                ]
+            });
+            console.log('SW notification sent (mobile + desktop)');
+        }).catch(err => {
+            console.error('SW notification failed, trying fallback:', err);
+            // Desktop fallback only
+            try {
+                new Notification(title, { body, icon: iconUrl });
+            } catch(e) { console.error('Fallback also failed:', e); }
         });
-
-        notification.onclick = () => {
-            window.focus();
-            openAlertsPanel();
-            notification.close();
-        };
-
-        console.log('Desktop notification sent successfully');
-    } catch (err) {
-        console.error('Desktop notification error:', err);
-    }
-
-    // Method 2: Service Worker Push (works even when app is closed/minimized)
-    // This is what makes phone notifications work!
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-            type: 'STOCK_ALERT',
-            title: title,
-            body: body,
-            icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-            badge: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-            tag: 'stock-alert-' + Date.now()
-        });
-        console.log('Service worker push message sent');
+    } else {
+        // Desktop-only fallback
+        try {
+            new Notification(title, { body, icon: iconUrl });
+        } catch(e) { console.error('Notification failed:', e); }
     }
 }
 
@@ -1035,10 +1032,17 @@ window.enableNotifPermission = async function() {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
         showToast('Notifications enabled!', 'success');
-        new Notification('Stock Space', {
-            body: 'You will now receive alerts when items run low!',
-            icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png'
-        });
+        // Use SW for mobile PWA - new Notification() blocked on phones
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification('Stock Space 📦', {
+                    body: 'You will now get alerts when items run low!',
+                    icon: './icon-512.png',
+                    badge: './icon-512.png',
+                    tag: 'welcome-notif'
+                });
+            });
+        }
     } else {
         localStorage.setItem('notifPromptDismissed', 'true');
     }
