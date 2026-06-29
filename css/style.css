@@ -2317,7 +2317,7 @@ button.submit-btn:active,
     }
 
     .hamburger-indicator:active {
-        opacity: 0.7;
+        opacity: 0.2;
         transform: scale(0.95);
     }
 
