@@ -2376,22 +2376,45 @@ button.submit-btn:active,
     }
 
     .header {
-        padding: 14px 18px;
-        border-radius: 16px;
-        margin-bottom: 16px;
-    }
-
-    .header h2 {
-        font-size: 16px;
-    }
-
-    .header-title-area {
+        padding: 10px 12px;
+        border-radius: 14px;
+        margin-bottom: 12px;
         gap: 8px;
     }
 
+    .header h2 {
+        font-size: 14px;
+    }
+
+    .header-title-area {
+        gap: 6px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .header-actions-area {
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
     .logout-btn {
-        padding: 8px 16px;
+        padding: 6px 10px;
+        font-size: 10px;
+        gap: 4px;
+    }
+
+    .logout-btn::before {
         font-size: 12px;
+    }
+
+    #enableAlertsBtn {
+        padding: 6px 10px !important;
+        font-size: 10px !important;
+    }
+
+    #installAppBtn {
+        padding: 6px 10px !important;
+        font-size: 10px !important;
     }
 
     .network-status-badge {

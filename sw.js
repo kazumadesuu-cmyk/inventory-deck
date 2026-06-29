@@ -15,7 +15,6 @@ self.addEventListener('activate', (event) => {
 
 // FETCH HANDLER - Required for PWA install prompt
 self.addEventListener('fetch', (event) => {
-  // Just pass through - no caching needed for this app
   event.respondWith(fetch(event.request));
 });
 
@@ -28,7 +27,13 @@ self.addEventListener('message', (event) => {
       body: data.body || 'Low stock warning!',
       icon: data.icon || './icon-512.png',
       tag: data.tag || 'stock-alert',
-      renotify: true
+      renotify: true,
+      // Android-specific: vibration pattern
+      vibrate: [200, 100, 200],
+      // Android-specific: ensure it shows as heads-up notification
+      requireInteraction: false,
+      // Android-specific: silent false ensures sound plays
+      silent: false
     };
     console.log('[SW] Showing notification:', data.title);
     self.registration.showNotification(data.title || 'Stock Space Alert', options);
@@ -43,8 +48,12 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body || 'Low stock warning!',
     icon: data.icon || './icon-512.png',
-    tag: data.tag || 'stock-alert',
-    renotify: true
+    tag: 'stock-alert-' + Date.now(),
+    renotify: true,
+    vibrate: [300, 100, 300, 100, 300],
+    requireInteraction: false,
+    silent: false,
+    priority: 'high'
   };
   event.waitUntil(
     self.registration.showNotification(title, options)
@@ -70,4 +79,14 @@ self.addEventListener('notificationclick', (event) => {
       })
     );
   }
+});
+
+// Background sync - keeps SW alive
+self.addEventListener('sync', (event) => {
+  console.log('[SW] Background sync:', event.tag);
+});
+
+// Periodic background sync (if supported)
+self.addEventListener('periodicsync', (event) => {
+  console.log('[SW] Periodic sync:', event.tag);
 });
