@@ -1100,7 +1100,7 @@ window.showActionToast = function(message, type = 'sell') {
         box-shadow: 0 8px 30px rgba(0,0,0,0.2);
         opacity: 0;
         transform: translateX(50px);
-        transition: opacity 2s ease, transform 2s ease;
+        transition: opacity 0.3s ease, transform 0.3s ease;
         pointer-events: auto;
         min-width: 220px;
         text-align: center;
@@ -1120,8 +1120,8 @@ window.showActionToast = function(message, type = 'sell') {
         toast.style.transform = 'translateX(50px)';
         setTimeout(() => {
             if (toast.parentNode) toast.remove();
-        }, 2000);
-    }, 5000);
+        }, 300);
+    }, 4000);
 };
 
 window.confirmLogout = async function() {
@@ -1358,19 +1358,18 @@ window.addToCart = function(productId) {
     }
 
     updateCartBadge();
-    showCartAddedToast(product.name);
+    showCartAddedToast(product.name, product.price);
 };
 
 /**
- * Shows a floating toast on the card like "🛒 Added to Cart!"
- * Similar to the "Sold x1 Water" toast
+ * Shows a floating toast like "🛒 Added to Cart! Water — ₱3.00"
+ * Same style as Sold/Restock toasts
  */
-function showCartAddedToast(productName) {
-    // Create a floating toast similar to showActionToast
-    let container = document.getElementById('cartToastContainer');
+function showCartAddedToast(productName, price) {
+    let container = document.getElementById('actionToastContainer');
     if (!container) {
         container = document.createElement('div');
-        container.id = 'cartToastContainer';
+        container.id = 'actionToastContainer';
         container.style.cssText = `
             position: fixed;
             top: 24px;
@@ -1395,12 +1394,12 @@ function showCartAddedToast(productName) {
         box-shadow: 0 8px 30px rgba(245, 158, 11, 0.4);
         opacity: 0;
         transform: translateX(50px);
-        transition: opacity 0.4s ease, transform 0.4s ease;
+        transition: opacity 0.3s ease, transform 0.3s ease;
         pointer-events: auto;
         min-width: 220px;
         text-align: center;
     `;
-    toast.innerHTML = `🛒 ${productName} added to cart!`;
+    toast.innerHTML = `🛒 Added to Cart!<br><span style="font-size: 16px;">${productName}</span><br><span style="font-size: 13px; opacity: 0.9;">₱${Number(price).toFixed(2)}</span>`;
 
     container.appendChild(toast);
     toast.offsetHeight;
@@ -1415,8 +1414,8 @@ function showCartAddedToast(productName) {
         toast.style.transform = 'translateX(50px)';
         setTimeout(() => {
             if (toast.parentNode) toast.remove();
-        }, 400);
-    }, 2500);
+        }, 300);
+    }, 4000);
 }
 
 window.updateCartBadge = function() {
