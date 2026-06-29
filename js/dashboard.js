@@ -318,22 +318,23 @@ window.restockOne = restockOne;
 // ==================== LOW STOCK CHECKING (COMPLETELY FIXED) ====================
 
 function checkLowStock(productList) {
+    console.log('[STOCK] checkLowStock called with', productList.length, 'products');
+
     const lowItems = productList.filter(p => p.quantity <= p.alert_limit);
+    console.log('[STOCK] Low items found:', lowItems.length, lowItems.map(p => p.name));
+
     const lowItemIds = new Set(lowItems.map(p => p.id));
 
-    // IMPORTANT: Remove items that are NO LONGER low from alertedProductIds
-    // This resets them so they can trigger again if they go low in the future
+    // Remove items that are NO LONGER low
     for (const id of Array.from(alertedProductIds)) {
         if (!lowItemIds.has(id)) {
             alertedProductIds.delete(id);
-            console.log('Reset alert for product', id, '- stock recovered');
+            console.log('[STOCK] Reset alert for product', id);
         }
     }
 
-    // Update lowStockHistory to only contain currently low items
+    // Update history
     lowStockHistory = lowStockHistory.filter(h => lowItemIds.has(h.id));
-
-    // Update history for currently low items
     lowItems.forEach(item => {
         const existing = lowStockHistory.find(h => h.id === item.id);
         if (!existing) {
@@ -350,16 +351,15 @@ function checkLowStock(productList) {
         }
     });
 
-    // Update UI based on whether there are low items
+    // Update UI
     updateLowStockBanner(lowItems);
     updateAlertsPanel();
 
     if (lowItems.length > 0) {
-        // CRITICAL FIX: Find newly alerted BEFORE adding to alertedProductIds
         const newlyAlerted = lowItems.filter(item => !alertedProductIds.has(item.id));
+        console.log('[STOCK] Newly alerted items:', newlyAlerted.length, newlyAlerted.map(p => p.name));
 
         if (newlyAlerted.length > 0) {
-            // Now add them to the set
             newlyAlerted.forEach(item => alertedProductIds.add(item.id));
 
             // Log to Firestore
@@ -370,9 +370,14 @@ function checkLowStock(productList) {
             // Show warning modal
             showLowStockModal(lowItems);
 
-            // Send Chrome/desktop notification
+            // Send notification
+            console.log('[STOCK] Calling sendChromeNotification...');
             sendChromeNotification(newlyAlerted);
+        } else {
+            console.log('[STOCK] No newly alerted items (already notified)');
         }
+    } else {
+        console.log('[STOCK] No low stock items');
     }
 }
 

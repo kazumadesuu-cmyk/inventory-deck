@@ -38,6 +38,7 @@
             <div id="networkStatusBadge" class="network-status-badge online">Online</div>
         </div>
         <div class="header-actions-area">
+            <button onclick="testNotification()" style="background:#22c55e;color:white;border:none;padding:10px 18px;border-radius:12px;font-weight:bold;cursor:pointer;font-family:inherit;margin-right:10px;">🧪 Test Notif</button>
             <button id="logoutBtn" class="logout-btn">Logout</button>
         </div>
     </div>
@@ -239,10 +240,25 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./js/sw.js', { scope: './' })
         .then(registration => {
             console.log('[SW] Registered:', registration.scope);
+            console.log('[SW] Active:', registration.active ? 'YES' : 'NO');
+            console.log('[SW] Installing:', registration.installing ? 'YES' : 'NO');
+            console.log('[SW] Waiting:', registration.waiting ? 'YES' : 'NO');
+            
+            // Force activation
+            if (registration.installing) {
+                registration.installing.addEventListener('statechange', function() {
+                    console.log('[SW] State changed to:', this.state);
+                });
+            }
         })
         .catch(error => {
-            console.log('[SW] Registration failed:', error);
+            console.error('[SW] Registration failed:', error);
         });
+    
+    // Listen for controller change
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('[SW] Controller changed');
+    });
 }
 </script>
 
