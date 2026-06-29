@@ -367,14 +367,14 @@ button.submit-btn:active,
     left: 0;
 }
 
-/* Hamburger button - black circle with three white lines */
+/* Hamburger button - dashboard blue circle with white lines */
 .hamburger-indicator {
     position: fixed;
     top: 16px;
     left: 16px;
     width: 52px;
     height: 52px;
-    background: #000;
+    background: #0284c7;
     border: none;
     border-radius: 50%;
     display: flex;
@@ -384,26 +384,37 @@ button.submit-btn:active,
     gap: 6px;
     cursor: pointer;
     z-index: 99999999;
-    box-shadow: 0 4px 14px rgba(0,0,0,.45);
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45);
     transition: all .25s ease;
     padding: 0;
 }
 
-.hamburger-indicator:hover{
+.hamburger-indicator:hover {
     transform: scale(1.08);
-    box-shadow: 0 6px 20px rgba(0,0,0,.55);
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.55);
 }
 
-.hamburger-indicator span{
-    display:block;
-    width:26px;
-    height:3px;
-    background:#fff;
-    border-radius:2px;
-    transition:.3s ease;
+.hamburger-indicator:active {
+    opacity: 0.7;
+    transform: scale(0.95);
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+.hamburger-indicator span {
+    display: block;
+    width: 26px;
+    height: 3px;
+    background: #fff;
+    border-radius: 2px;
+    transition: .3s ease;
 }
 
 /* Hamburger transforms to X when active */
+.hamburger-indicator.active {
+    opacity: 0.7;
+    background: #0284c7;
+}
+
 .hamburger-indicator.active span:nth-child(1) {
     transform: translateY(9px) rotate(45deg);
 }
@@ -2067,7 +2078,13 @@ button.submit-btn:active,
         height: 46px;
         padding: 0;
         border: none;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+        background: #0284c7;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45);
+    }
+
+    .hamburger-indicator:active {
+        opacity: 0.7;
+        transform: scale(0.95);
     }
 
     .hamburger-indicator span {
@@ -2295,7 +2312,13 @@ button.submit-btn:active,
         left: 14px;
         gap: 5px;
         border: none;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+        background: #0284c7;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45);
+    }
+
+    .hamburger-indicator:active {
+        opacity: 0.7;
+        transform: scale(0.95);
     }
 
     .hamburger-indicator span {
