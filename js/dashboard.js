@@ -565,7 +565,7 @@ async function sendChromeNotification(newlyAlertedItems) {
         ? `${productNames} is running low! Only ${newlyAlertedItems[0].quantity} left (limit: ${newlyAlertedItems[0].alert_limit})`
         : `${productNames} are running low on stock.`;
 
-    const iconUrl = './icon-512.png';
+    const iconUrl = 'https://inventory-deck.vercel.app/icon-512.png';
     const tag = 'stock-alert-' + Date.now();
 
     console.log('[NOTIF] Preparing notification:', title);
@@ -654,8 +654,8 @@ window.requestNotifPermission = async function() {
                     const reg = await navigator.serviceWorker.ready;
                     await reg.showNotification('Stock Space 📦', {
                         body: 'You will now receive alerts when items run low!',
-                        icon: './icon-512.png',
-                        badge: './icon-512.png',
+                        icon: 'https://inventory-deck.vercel.app/icon-512.png',
+                        badge: 'https://inventory-deck.vercel.app/icon-512.png',
                         tag: 'test-' + Date.now(),
                         requireInteraction: false,
                         renotify: true,
@@ -670,7 +670,7 @@ window.requestNotifPermission = async function() {
                     try {
                         new Notification('Stock Space', {
                             body: 'You will now receive alerts when items run low!',
-                            icon: './icon-512.png'
+                            icon: 'https://inventory-deck.vercel.app/icon-512.png'
                         });
                     } catch(e) {}
                 }
@@ -679,7 +679,7 @@ window.requestNotifPermission = async function() {
                 try {
                     new Notification('Stock Space', {
                         body: 'You will now receive alerts when items run low!',
-                        icon: './icon-512.png'
+                        icon: 'https://inventory-deck.vercel.app/icon-512.png'
                     });
                 } catch(e) {}
             }
@@ -1292,7 +1292,7 @@ window.enableNotifPermission = async function() {
                 const reg = await navigator.serviceWorker.ready;
                 await reg.showNotification('Stock Space 📦', {
                     body: 'You will now get alerts when items run low!',
-                    icon: './icon-512.png',
+                    icon: 'https://inventory-deck.vercel.app/icon-512.png',
                     tag: 'welcome-notif'
                 });
                 console.log('[NOTIF] Welcome notification sent');

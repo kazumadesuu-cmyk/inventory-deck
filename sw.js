@@ -25,7 +25,7 @@ self.addEventListener('message', (event) => {
     const data = event.data;
     const options = {
       body: data.body || 'Low stock warning!',
-      icon: data.icon || './icon-512.png',
+      icon: data.icon || 'https://inventory-deck.vercel.app/icon-512.png',
       tag: data.tag || 'stock-alert',
       renotify: true,
       // Android-specific: vibration pattern
@@ -47,7 +47,7 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Stock Space Alert';
   const options = {
     body: data.body || 'Low stock warning!',
-    icon: data.icon || './icon-512.png',
+    icon: data.icon || 'https://inventory-deck.vercel.app/icon-512.png',
     tag: 'stock-alert-' + Date.now(),
     renotify: true,
     vibrate: [300, 100, 300, 100, 300],
