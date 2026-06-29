@@ -13,6 +13,7 @@ let lowStockHistory = [];
 let alertedProductIds = new Set();
 let instantActivityLogs = [];
 let currentActivityFilter = 'ALL';
+let cart = []; // { id, name, price, quantity, image_url, category }
 
 let actionCooldown = false;
 let cooldownTimer = null;
@@ -340,6 +341,7 @@ function renderProductCards(productList) {
                 </div>
                 <div class="utility-row">
                     <button class="btn-action btn-edit" onclick="event.stopPropagation(); editProduct('${product.id}')">Edit</button>
+                    <button class="btn-action" style="background: #fef3c7; color: #92400e;" onclick="event.stopPropagation(); addToCart('${product.id}')">🛒 Cart</button>
                     <button class="btn-action btn-delete" onclick="event.stopPropagation(); deleteProductItem('${product.id}')">Delete</button>
                 </div>
             </div>
@@ -1325,3 +1327,175 @@ document.addEventListener('click', function(e) {
         }
     }
 });
+
+// ==================== SHOPPING CART ====================
+
+window.addToCart = function(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    if (product.quantity < 1) {
+        showToast('Not enough stock!', 'error');
+        return;
+    }
+
+    const existingItem = cart.find(item => item.id === productId);
+    if (existingItem) {
+        if (existingItem.quantity >= product.quantity) {
+            showToast('Not enough stock available!', 'error');
+            return;
+        }
+        existingItem.quantity += 1;
+    } else {
+        cart.push({
+            id: product.id,
+            name: product.name,
+            price: Number(product.price) || 0,
+            quantity: 1,
+            image_url: product.image_url,
+            category: product.category
+        });
+    }
+
+    updateCartBadge();
+    showToast(`Added ${product.name} to cart`, 'success');
+};
+
+window.updateCartBadge = function() {
+    const badge = document.getElementById('cartBadge');
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    if (badge) {
+        badge.textContent = totalItems;
+        badge.style.display = totalItems > 0 ? 'flex' : 'none';
+    }
+};
+
+window.openCartModal = function() {
+    renderCart();
+    openPopupModal('cartModal');
+};
+
+window.renderCart = function() {
+    const content = document.getElementById('cartContent');
+    const footer = document.getElementById('cartFooter');
+
+    if (cart.length === 0) {
+        if (content) {
+            content.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🛒</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #64748b;">Your cart is empty</div>
+                    <p style="font-size: 14px;">Tap "Add to Cart" on any product to start selling!</p>
+                </div>
+            `;
+        }
+        if (footer) footer.style.display = 'none';
+        return;
+    }
+
+    if (content) {
+        content.innerHTML = cart.map((item, index) => `
+            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 14px; margin-bottom: 10px; border: 1px solid #e2e8f0;">
+                <img src="${item.image_url || 'https://cdn-icons-png.flaticon.com/512/679/679720.png'}" style="width: 50px; height: 50px; border-radius: 10px; object-fit: cover; flex-shrink: 0;" onerror="this.src='https://cdn-icons-png.flaticon.com/512/679/679720.png'">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; color: #1e293b; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.name)}</div>
+                    <div style="font-size: 12px; color: #64748b;">${escapeHtml(item.category)} · ₱${item.price.toFixed(2)} each</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                    <button onclick="changeCartQty('${item.id}', -1)" style="width: 28px; height: 28px; border-radius: 8px; border: none; background: #fee2e2; color: #991b1b; font-weight: 700; cursor: pointer; font-size: 14px;">−</button>
+                    <span style="font-weight: 700; color: #0f172a; font-size: 14px; min-width: 24px; text-align: center;">${item.quantity}</span>
+                    <button onclick="changeCartQty('${item.id}', 1)" style="width: 28px; height: 28px; border-radius: 8px; border: none; background: #dcfce7; color: #166534; font-weight: 700; cursor: pointer; font-size: 14px;">+</button>
+                </div>
+                <div style="font-weight: 700; color: #22c55e; font-size: 14px; flex-shrink: 0; min-width: 70px; text-align: right;">₱${(item.price * item.quantity).toFixed(2)}</div>
+                <button onclick="removeFromCart('${item.id}')" style="width: 28px; height: 28px; border-radius: 8px; border: none; background: #f1f5f9; color: #94a3b8; cursor: pointer; font-size: 12px;">✕</button>
+            </div>
+        `).join('');
+    }
+
+    updateCartTotals();
+    if (footer) footer.style.display = 'block';
+};
+
+window.changeCartQty = function(productId, delta) {
+    const item = cart.find(i => i.id === productId);
+    if (!item) return;
+
+    const product = products.find(p => p.id === productId);
+
+    item.quantity += delta;
+
+    if (item.quantity <= 0) {
+        removeFromCart(productId);
+        return;
+    }
+
+    // Check stock limit
+    if (product && item.quantity > product.quantity) {
+        item.quantity = product.quantity;
+        showToast('Max stock reached!', 'warning');
+    }
+
+    renderCart();
+    updateCartBadge();
+};
+
+window.removeFromCart = function(productId) {
+    cart = cart.filter(item => item.id !== productId);
+    renderCart();
+    updateCartBadge();
+};
+
+window.clearCart = function() {
+    cart = [];
+    renderCart();
+    updateCartBadge();
+    showToast('Cart cleared', 'success');
+};
+
+window.checkoutCart = async function() {
+    if (cart.length === 0) return;
+
+    let totalRevenue = 0;
+
+    for (const item of cart) {
+        const product = products.find(p => p.id === item.id);
+        if (!product || product.quantity < item.quantity) {
+            showToast(`Not enough stock for ${item.name}!`, 'error');
+            return;
+        }
+    }
+
+    // Process all sales
+    for (const item of cart) {
+        const product = products.find(p => p.id === item.id);
+        try {
+            await updateStock(
+                item.id, 
+                product.quantity - item.quantity, 
+                (product.items_sold || 0) + item.quantity, 
+                'SELL', 
+                item.quantity
+            );
+            totalRevenue += item.price * item.quantity;
+            addInstantActivity(item.name, 'SELL', item.quantity, item.price * item.quantity);
+        } catch (err) {
+            console.error('Checkout error for', item.name, err);
+        }
+    }
+
+    showActionToast(`Sold ${cart.reduce((s, i) => s + i.quantity, 0)} items! Revenue: ₱${totalRevenue.toFixed(2)}`, 'sell');
+    cart = [];
+    updateCartBadge();
+    closePopupModal('cartModal');
+};
+
+window.updateCartTotals = function() {
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    const itemsEl = document.getElementById('cartTotalItems');
+    const amountEl = document.getElementById('cartTotalAmount');
+
+    if (itemsEl) itemsEl.textContent = totalItems;
+    if (amountEl) amountEl.textContent = '₱' + totalAmount.toFixed(2);
+};

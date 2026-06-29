@@ -64,7 +64,12 @@
     </div>
     <div class="panel-title-bar">
         <h3>Inventory Deck</h3>
-        <button class="add-product-btn" onclick="openAddModal()">Add Product</button>
+        <div style="display: flex; gap: 10px;">
+            <button class="add-product-btn" onclick="openCartModal()" style="position: relative; background: #f59e0b; box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);">
+                🛒 Cart <span id="cartBadge" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: none; align-items: center; justify-content: center;">0</span>
+            </button>
+            <button class="add-product-btn" onclick="openAddModal()">Add Product</button>
+        </div>
     </div>
     <div class="cards-grid" id="cardsGrid">
         <div class="empty-view">Your inventory deck is empty. Tap add to start!</div>
@@ -297,7 +302,34 @@ if ('serviceWorker' in navigator) {
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
+<!-- Cart Modal -->
+<div class="modal-overlay" id="cartModal" onclick="closePopupModalOnBackground(event, 'cartModal')">
+    <div class="modal-box wide-modal-box">
+        <h3>🛒 Shopping Cart</h3>
+        <div id="cartContent">
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                <div style="font-size: 48px; margin-bottom: 16px;">🛒</div>
+                <div style="font-size: 18px; font-weight: 700; color: #64748b;">Your cart is empty</div>
+                <p style="font-size: 14px;">Tap "Add to Cart" on any product to start selling!</p>
+            </div>
+        </div>
+        <div id="cartFooter" style="display: none; border-top: 2px solid #f1f5f9; padding-top: 20px; margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <span style="font-size: 16px; font-weight: 700; color: #64748b;">Total Items:</span>
+                <span id="cartTotalItems" style="font-size: 18px; font-weight: 900; color: #0284c7;">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <span style="font-size: 16px; font-weight: 700; color: #64748b;">Total Amount:</span>
+                <span id="cartTotalAmount" style="font-size: 24px; font-weight: 900; color: #22c55e;">₱0.00</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="modal-close-btn" style="flex: 1; margin: 0;" onclick="clearCart()">🗑️ Clear Cart</button>
+                <button type="button" class="add-product-btn" style="flex: 2; margin: 0; background: #22c55e; box-shadow: 0 6px 16px rgba(34, 197, 94, 0.3);" onclick="checkoutCart()">✅ Confirm Sale</button>
+            </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closePopupModal('cartModal')">Close Cart</button>
+    </div>
+</div>
 <div class="cute-modal-overlay" id="deleteConfirmModal" onclick="if(event.target===this)closeCuteModal('deleteConfirmModal')">
     <div class="cute-modal-box">
         <span class="cute-modal-emoji">🗑️</span>
