@@ -1152,25 +1152,28 @@ window.dismissNotifPermission = function() {
 
 window.enableNotifPermission = async function() {
     const permission = await Notification.requestPermission();
+    console.log('[NOTIF] Permission result:', permission);
+
     if (permission === 'granted') {
         showToast('Notifications enabled!', 'success');
-        // Use SW for mobile PWA - new Notification() blocked on phones
+
+        // Send welcome notification
         if ('serviceWorker' in navigator) {
             try {
                 const reg = await navigator.serviceWorker.ready;
                 await reg.showNotification('Stock Space 📦', {
                     body: 'You will now get alerts when items run low!',
                     icon: './icon-512.png',
-                    badge: './icon-512.png',
-                    tag: 'welcome-notif',
-                    requireInteraction: true
+                    tag: 'welcome-notif'
                 });
+                console.log('[NOTIF] Welcome notification sent');
             } catch (err) {
                 console.error('[NOTIF] Welcome notification failed:', err);
             }
         }
     } else {
         localStorage.setItem('notifPromptDismissed', 'true');
+        showToast('Notifications denied', 'warning');
     }
     const modal = document.getElementById('notifPermissionModal');
     if (modal) modal.style.display = 'none';
