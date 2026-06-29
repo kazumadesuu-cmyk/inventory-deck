@@ -15,7 +15,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 <base target="_blank">
-<base target="_blank">
 </head>
 <body>
 
@@ -43,6 +42,12 @@ console.log('[PWA] User agent:', navigator.userAgent.substring(0, 60));
         <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openAddModal(); return false;">Add product</a>
         <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openCategoryModeModal(); return false;">Categories</a>
     </nav>
+    
+    <!-- Sidebar Bottom Section -->
+    <div class="sidebar-bottom-section">
+        <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openPopupModal('membersPopup'); return false;">👥 Members</a>
+        <a href="javascript:void(0)" class="sidebar-menu-item sub-node" onclick="openSettingsPanel(); return false;">⚙️ Settings</a>
+    </div>
 </div>
 <div class="dashboard-wrapper">
     <div class="header">
@@ -51,8 +56,6 @@ console.log('[PWA] User agent:', navigator.userAgent.substring(0, 60));
             <div id="networkStatusBadge" class="network-status-badge online">Online</div>
         </div>
         <div class="header-actions-area">
-            <button id="enableAlertsBtn" class="logout-btn" style="background: linear-gradient(135deg, #fef9c3 0%, #fde047 100%); color: #854d0e; border-color: #facc15;" onclick="requestNotifPermission()">🔔 Enable Alerts</button>
-            <button id="installAppBtn" class="logout-btn" style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); color: #166534; border-color: #86efac;" onclick="installPWA()">📱 Install</button>
             <button id="logoutBtn" class="logout-btn">Logout</button>
         </div>
     </div>
@@ -345,6 +348,43 @@ if ('serviceWorker' in navigator) {
         <button type="button" class="modal-close-btn" onclick="closePopupModal('cartModal')">Close Cart</button>
     </div>
 </div>
+
+<!-- Members Popup -->
+<div class="modal-overlay" id="membersPopup" onclick="closePopupModalOnBackground(event, 'membersPopup')">
+    <div class="modal-box" style="text-align: center; max-width: 420px; padding: 40px;">
+        <div style="font-size: 56px; margin-bottom: 16px;">👥</div>
+        <h3 style="margin: 0 0 20px; color: #0f172a; font-size: 22px;">Team Members</h3>
+        <div id="membersList" style="text-align: left; margin-bottom: 20px;">
+            <div style="padding: 10px 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; font-weight: 600; color: #1e293b;">Lhesly Mae Saile</div>
+            <div style="padding: 10px 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; font-weight: 600; color: #1e293b;">Jetrel Pactoran</div>
+            <div style="padding: 10px 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; font-weight: 600; color: #1e293b;">Juvelou ReyArmecin</div>
+            <div style="padding: 10px 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; font-weight: 600; color: #1e293b;">Rose Anding</div>
+            <div style="padding: 10px 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; font-weight: 600; color: #1e293b;">Primer James Jumanog</div>
+            <div style="padding: 10px 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; font-weight: 600; color: #1e293b;">Ramela Omandam</div>
+            <div style="padding: 10px 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; font-weight: 600; color: #1e293b;">Angel Andong</div>
+            <div style="padding: 10px 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; font-weight: 600; color: #1e293b;">Annamae Gunong</div>
+            <div style="padding: 10px 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; font-weight: 600; color: #1e293b;">Dave Mark Pusod</div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closePopupModal('membersPopup')">Close</button>
+    </div>
+</div>
+
+<!-- Settings Panel -->
+<div class="modal-overlay" id="settingsPanel" style="z-index: 9999997;">
+    <div class="modal-box" style="max-width: 400px; padding: 30px;">
+        <h3 style="margin: 0 0 20px; color: #0f172a;">⚙️ Settings</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn-action btn-edit" style="justify-content: flex-start; padding: 14px; font-size: 14px;" onclick="requestNotifPermission(); closePopupModal('settingsPanel');">
+                🔔 Enable Notifications
+            </button>
+            <button class="btn-action btn-restock" style="justify-content: flex-start; padding: 14px; font-size: 14px;" onclick="installPWA(); closePopupModal('settingsPanel');">
+                📱 Install App
+            </button>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closePopupModal('settingsPanel')" style="margin-top: 20px;">Close Settings</button>
+    </div>
+</div>
+
 <div class="cute-modal-overlay" id="deleteConfirmModal" onclick="if(event.target===this)closeCuteModal('deleteConfirmModal')">
     <div class="cute-modal-box">
         <span class="cute-modal-emoji">🗑️</span>

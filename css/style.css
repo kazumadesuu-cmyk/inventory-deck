@@ -492,6 +492,25 @@ button.submit-btn:active,
     transform: translateX(4px);
 }
 
+/* Sidebar bottom section */
+.sidebar-bottom-section {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 2px solid #f1f5f9;
+    width: 100%;
+}
+
+.sidebar-bottom-section .sidebar-menu-item {
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+.sidebar-nav.open .sidebar-bottom-section .sidebar-menu-item {
+    opacity: 1;
+    transform: translateX(0);
+    transition-delay: 0.5s;
+}
+
 /* ---------- HEADER ---------- */
 .header {
     display: flex;
