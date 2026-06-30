@@ -14,6 +14,7 @@ let alertedProductIds = new Set();
 let instantActivityLogs = [];
 let currentActivityFilter = 'ALL';
 let cart = []; // { id, name, price, quantity, image_url, category }
+let filteredProducts = [];
 
 let actionCooldown = false;
 let cooldownTimer = null;
@@ -55,7 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function initializeDashboard() {
     unsubscribeProducts = subscribeToProducts((newProducts) => {
         products = newProducts;
-        renderProductCards(newProducts);
+
+const search = document.getElementById("searchInput");
+
+if (search && search.value.trim() !== "") {
+    searchProducts();
+} else {
+    filteredProducts = [...products];
+    renderProductCards(filteredProducts);
+}
         checkLowStock(newProducts);
         updateSummary(newProducts);
         updateProductsPopup(newProducts);
@@ -401,6 +410,23 @@ function renderProductCards(productList) {
         grid.appendChild(card);
     });
 }
+
+window.searchProducts = function() {
+    const searchInput = document.getElementById('searchInput');
+    const term = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    if (term === '') {
+        filteredProducts = [...products];
+    } else {
+        filteredProducts = products.filter(product => {
+            const name = (product.name || '').toLowerCase();
+            const category = (product.category || '').toLowerCase();
+            return name.includes(term) || category.includes(term);
+        });
+    }
+
+    renderProductCards(filteredProducts);
+};
 
 function escapeHtml(text) {
     const div = document.createElement('div');
@@ -1077,6 +1103,7 @@ window.confirmDeleteProduct = async function() {
     closeCuteModal('deleteConfirmModal');
     try {
         await deleteProduct(product.id);
+        addInstantActivity(product.name, 'DELETE', 0, 0);
         showToast(`Deleted ${product.name}`);
         window.productToDelete = null;
     } catch (err) {

@@ -111,7 +111,18 @@ export async function updateStock(productId, newQuantity, newItemsSold, action, 
 
 // Delete product
 export async function deleteProduct(productId) {
-    await deleteDoc(doc(db, PRODUCTS_COLLECTION, productId));
+    const productRef = doc(db, PRODUCTS_COLLECTION, productId);
+    const productSnap = await getDoc(productRef);
+    const productName = productSnap.exists() ? productSnap.data().name : 'Unknown Product';
+
+    await deleteDoc(productRef);
+
+    try {
+        await logActivity(productName, 'DELETE', 0, 0);
+        console.log('DELETE activity logged for:', productName);
+    } catch (err) {
+        console.error('Failed to log DELETE activity:', err);
+    }
 }
 
 // Log activity
