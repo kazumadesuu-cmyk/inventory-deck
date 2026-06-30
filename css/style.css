@@ -755,6 +755,47 @@ button.submit-btn:active,
     transform: translateY(0);
 }
 
+/* ---------- INVENTORY ACTIONS / SEARCH ---------- */
+.inventory-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+}
+
+.search-box input {
+    width: 220px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 1.5px solid #e2e8f0;
+    font-family: inherit;
+    font-size: 14px;
+    color: #1e293b;
+    background: #f8fafc;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #0284c7;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.12);
+}
+
+.search-box input::placeholder {
+    color: #94a3b8;
+}
+
+/* Sidebar search box (mobile) - hidden on desktop */
+.sidebar-search-box {
+    display: none;
+}
+
 /* ---------- PRODUCT CARDS ---------- */
 .cards-grid {
     display: grid;
@@ -2162,6 +2203,42 @@ button.submit-btn:active,
 
     .sidebar-menu-list {
         width: 100%;
+    }
+
+    /* Phone view: hide the header search box, show sidebar search instead */
+    .header-search-box {
+        display: none;
+    }
+
+    .sidebar-search-box {
+        display: block;
+        width: 100%;
+        padding: 0 24px 16px 24px;
+        box-sizing: border-box;
+    }
+
+    .sidebar-search-box input {
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: 14px;
+        border: 1.5px solid #e2e8f0;
+        font-family: inherit;
+        font-size: 14px;
+        color: #1e293b;
+        background: #f8fafc;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+    }
+
+    .sidebar-search-box input:focus {
+        outline: none;
+        border-color: #0284c7;
+        background: #ffffff;
+        box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.12);
+    }
+
+    .sidebar-search-box input::placeholder {
+        color: #94a3b8;
     }
 
     .header {

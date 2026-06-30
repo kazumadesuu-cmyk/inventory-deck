@@ -60,7 +60,7 @@ function initializeDashboard() {
 const search = document.getElementById("searchInput");
 
 if (search && search.value.trim() !== "") {
-    searchProducts();
+    searchProducts(search);
 } else {
     filteredProducts = [...products];
     renderProductCards(filteredProducts);
@@ -411,9 +411,15 @@ function renderProductCards(productList) {
     });
 }
 
-window.searchProducts = function() {
-    const searchInput = document.getElementById('searchInput');
-    const term = searchInput ? searchInput.value.trim().toLowerCase() : '';
+window.searchProducts = function(sourceEl) {
+    const desktopInput = document.getElementById('searchInput');
+    const mobileInput = document.getElementById('searchInputMobile');
+
+    const term = (sourceEl ? sourceEl.value : (desktopInput ? desktopInput.value : '')).trim().toLowerCase();
+
+    // Keep both search boxes in sync, regardless of which one the user typed in
+    if (desktopInput && desktopInput !== sourceEl) desktopInput.value = sourceEl ? sourceEl.value : desktopInput.value;
+    if (mobileInput && mobileInput !== sourceEl) mobileInput.value = sourceEl ? sourceEl.value : mobileInput.value;
 
     if (term === '') {
         filteredProducts = [...products];
