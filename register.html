@@ -1,10 +1,11 @@
-
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Join Us! - Stock Space</title>
+
+    <title>Create Account - Stock Space</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
@@ -12,17 +13,24 @@
 </head>
 
 <body class="auth-page">
+
     <div class="form-container">
         <h2>Create Account</h2>
         <p class="subtitle">Set up your private inventory space</p>
 
-        <div id="authError" class="error-msg" style="display:none;"></div>
+        <div
+            id="authError"
+            class="error-msg"
+            style="display: none;"
+            role="alert"
+        ></div>
 
-        <form id="registerForm">
+        <form id="registerForm" target="_self" method="post">
             <input
                 type="text"
                 id="regUsername"
                 placeholder="Username"
+                autocomplete="username"
                 required
             >
 
@@ -30,6 +38,7 @@
                 type="email"
                 id="regEmail"
                 placeholder="Email"
+                autocomplete="email"
                 required
             >
 
@@ -42,11 +51,11 @@
             >
 
             <datalist id="business-options">
-                <option value="Homemade Food / Bakery">
-                <option value="Handmade Crafts / Arts">
-                <option value="Cafe / Beverage Corner">
-                <option value="Boutique / Accessories">
-                <option value="Cosmetics / Beauty Shop">
+                <option value="Homemade Food / Bakery"></option>
+                <option value="Handmade Crafts / Arts"></option>
+                <option value="Cafe / Beverage Corner"></option>
+                <option value="Boutique / Accessories"></option>
+                <option value="Cosmetics / Beauty Shop"></option>
             </datalist>
 
             <div class="password-wrapper">
@@ -54,8 +63,9 @@
                     type="password"
                     id="regPass"
                     placeholder="Create Password"
-                    required
+                    autocomplete="new-password"
                     minlength="6"
+                    required
                 >
                 <span
                     class="toggle-password"
@@ -68,6 +78,7 @@
                     type="password"
                     id="regConfirm"
                     placeholder="Confirm Password"
+                    autocomplete="new-password"
                     required
                 >
                 <span
@@ -76,7 +87,7 @@
                 >Show</span>
             </div>
 
-            <button type="submit" class="submit-btn" id="createAccountBtn">
+            <button type="submit" id="registerButton" class="submit-btn">
                 Get Started
             </button>
         </form>
@@ -86,20 +97,28 @@
         </a>
     </div>
 
-    <div id="successModal" class="modal-overlay" style="display:none;">
-        <div class="modal-box" style="text-align:center;">
-            <h3>Account Created!</h3>
+    <!-- Account creation success modal -->
+    <div
+        id="successModal"
+        class="modal-overlay"
+        style="display: none;"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="successTitle"
+    >
+        <div class="modal-box" style="text-align: center;">
+            <h3 id="successTitle">Account Created!</h3>
 
             <p>
                 Your private workspace is ready for setup.
-                Let us head over to the dashboard to organize your details.
+                Let's head over to the dashboard to organize your details.
             </p>
 
             <a
                 href="dashboard.html"
-                target="_self"
                 class="modal-btn"
-                style="display:inline-block; margin-top:10px;"
+                target="_self"
+                style="display: inline-block; margin-top: 10px;"
             >
                 Go to Dashboard
             </a>
@@ -112,55 +131,69 @@
             updateUserProfile
         } from './js/auth.js';
 
-        const form = document.getElementById('registerForm');
-        const button = document.getElementById('createAccountBtn');
+        const registerForm = document.getElementById('registerForm');
+        const registerButton = document.getElementById('registerButton');
         const errorDiv = document.getElementById('authError');
+        const successModal = document.getElementById('successModal');
 
-        form.addEventListener('submit', async (event) => {
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        registerForm.addEventListener('submit', async function (event) {
+            // Prevent normal form submission and page reload.
             event.preventDefault();
+            event.stopPropagation();
 
+            errorDiv.textContent = '';
             errorDiv.style.display = 'none';
 
             const username = document.getElementById('regUsername').value.trim();
             const email = document.getElementById('regEmail').value.trim();
-            const password = document.getElementById('regPass').value;
-            const confirm = document.getElementById('regConfirm').value;
             const business = document.getElementById('regBusiness').value.trim();
+            const password = document.getElementById('regPass').value;
+            const confirmPassword = document.getElementById('regConfirm').value;
 
-            if (password !== confirm) {
-                errorDiv.textContent = 'Passwords do not match!';
-                errorDiv.style.display = 'block';
+            if (password !== confirmPassword) {
+                showError('Passwords do not match!');
                 return;
             }
 
-            button.disabled = true;
-            button.textContent = 'Creating Account...';
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters long.');
+                return;
+            }
+
+            registerButton.disabled = true;
+            registerButton.textContent = 'Creating Account...';
 
             try {
-                await registerUser(email, password);
+                // Create the Firebase account.
+                const user = await registerUser(email, password);
 
+                // Save the user's display name and business type.
                 await updateUserProfile({
                     displayName: username,
                     businessType: business
                 });
 
-                document.getElementById('successModal').style.display = 'flex';
+                // Show success only after both operations succeed.
+                successModal.style.display = 'flex';
+                successModal.querySelector('a').focus();
 
             } catch (error) {
-                console.error('Registration error:', error);
-
-                errorDiv.textContent =
-                    error.message || 'Unable to create your account. Please try again.';
-
-                errorDiv.style.display = 'block';
-
+                showError(
+                    error.message || 'Unable to create your account. Please try again.'
+                );
             } finally {
-                button.disabled = false;
-                button.textContent = 'Get Started';
+                registerButton.disabled = false;
+                registerButton.textContent = 'Get Started';
             }
         });
 
-        window.togglePassword = function(inputId, element) {
+        // Show or hide password fields.
+        window.togglePassword = function (inputId, element) {
             const input = document.getElementById(inputId);
 
             if (input.type === 'password') {
@@ -172,5 +205,7 @@
             }
         };
     </script>
+
 </body>
 </html>
+```
