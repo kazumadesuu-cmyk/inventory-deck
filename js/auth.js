@@ -1,132 +1,59 @@
-```javascript
 import { auth } from './firebase-config.js';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    updateProfile,
-    onAuthStateChanged
-} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-
-
-// ================================
-// REGISTER A NEW USER
-// ================================
 export async function registerUser(email, password) {
     try {
-        const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            email,
-            password
-        );
-
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         return userCredential.user;
-
     } catch (error) {
-        console.error('Registration error:', error);
-        throw error;
+        throw error.message;
     }
 }
 
-
-// ================================
-// UPDATE USER PROFILE
-// ================================
 export async function updateUserProfile(data) {
     try {
-        const user = auth.currentUser;
-
-        if (!user) {
-            throw new Error('No authenticated user was found.');
-        }
-
-        await updateProfile(user, {
-            displayName: data.displayName || data.businessType || ''
+        await updateProfile(auth.currentUser, { 
+            displayName: data.displayName || data.businessType 
         });
-
-        return user;
-
     } catch (error) {
-        console.error('Profile update error:', error);
-        throw error;
+        throw error.message;
     }
 }
 
-
-// ================================
-// LOG IN AN EXISTING USER
-// ================================
 export async function loginUser(email, password) {
     try {
-        const userCredential = await signInWithEmailAndPassword(
-            auth,
-            email,
-            password
-        );
-
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
         return userCredential.user;
-
     } catch (error) {
-        console.error('Login error:', error);
-        throw error;
+        throw error.message;
     }
 }
 
-
-// ================================
-// LOG OUT
-// ================================
 export async function logoutUser() {
-    try {
-        await signOut(auth);
-        window.location.replace('index.html');
-
-    } catch (error) {
-        console.error('Logout error:', error);
-        throw error;
-    }
+    await signOut(auth);
+    window.location.href = 'index.html';
 }
 
-
-// ================================
-// AUTHENTICATION STATE
-// ================================
+// Track auth readiness
 window.authReady = false;
-window.currentUser = null;
 
 onAuthStateChanged(auth, (user) => {
     window.authReady = true;
-    window.currentUser = user || null;
-
+    
     if (user) {
+        window.currentUser = user;
         const userDisplay = document.getElementById('userDisplay');
-
-        if (userDisplay) {
-            userDisplay.textContent =
-                user.displayName || user.email || '(User)';
-        }
+        if (userDisplay) userDisplay.textContent = user.displayName || user.email || '(User)';
+        
+        // Dispatch event so dashboard.js knows auth is ready
+        window.dispatchEvent(new CustomEvent('authReady', { detail: user }));
     } else {
-        // Keep visitors on the login or registration pages.
+        window.currentUser = null;
+        // Only redirect if we're NOT already on login or register page
         const path = window.location.pathname;
-
-        const isAuthPage =
-            path.endsWith('/index.html') ||
-            path.endsWith('/register.html') ||
-            path === '/' ||
-            path.endsWith('/');
-
-        // Redirect only protected pages, not login or registration.
+        const isAuthPage = path.includes('index.html') || path.includes('register.html') || path === '/' || path.endsWith('/');
         if (!isAuthPage) {
-            window.location.replace('index.html');
+            window.location.href = 'index.html';
         }
     }
-
-    // Notify other scripts that Firebase has finished checking the user.
-    window.dispatchEvent(
-        new CustomEvent('authReady', {
-            detail: user || null
-        })
-    );
 });
-```
